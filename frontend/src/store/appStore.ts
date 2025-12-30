@@ -132,7 +132,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Legacy function name for backward compatibility
-      addToLocalCart: (item: { product_id: string; quantity: number; product?: any }) => {
+      addToLocalCart: (item) => {
         const { cartItems } = get();
         const existingIndex = cartItems.findIndex((ci) => ci.productId === item.product_id);
 
