@@ -11,13 +11,15 @@ config.cacheStores = [
   new FileStore({ root: path.join(root, 'cache') }),
 ];
 
-
-// // Exclude unnecessary directories from file watching
-// config.watchFolders = [__dirname];
-// config.resolver.blacklistRE = /(.*)\/(__tests__|android|ios|build|dist|.git|node_modules\/.*\/android|node_modules\/.*\/ios|node_modules\/.*\/windows|node_modules\/.*\/macos)(\/.*)?$/;
-
-// // Alternative: use a more aggressive exclusion pattern
-// config.resolver.blacklistRE = /node_modules\/.*\/(android|ios|windows|macos|__tests__|\.git|.*\.android\.js|.*\.ios\.js)$/;
+// Force using CJS version for zustand to avoid import.meta issues
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Force zustand to use CommonJS build
+  if (moduleName === 'zustand' || moduleName.startsWith('zustand/')) {
+    const cjsPath = moduleName.replace(/^zustand/, 'zustand');
+    return context.resolveRequest(context, cjsPath, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 // Reduce the number of workers to decrease resource usage
 config.maxWorkers = 2;
