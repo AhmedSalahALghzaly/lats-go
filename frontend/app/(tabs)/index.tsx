@@ -21,6 +21,8 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAppStore } from '../../src/store/appStore';
 import { categoriesApi, carBrandsApi, carModelsApi, productBrandsApi, productsApi, cartApi, favoritesApi } from '../../src/services/api';
+import { Skeleton, ProductCardSkeleton, CategoryCardSkeleton } from '../../src/components/ui/Skeleton';
+import { syncService } from '../../src/services/syncService';
 
 export default function HomeScreen() {
   const { colors } = useTheme();
