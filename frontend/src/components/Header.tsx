@@ -128,21 +128,13 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Notification Bell */}
           <NotificationBell onPress={() => setShowNotifications(true)} />
 
-          {/* Mood Switcher / Palette Icon */}
-          <TouchableOpacity 
-            onPress={() => setShowMoodSwitcher(true)} 
-            style={styles.iconButton}
-          >
-            <Ionicons name="color-palette" size={22} color={currentMood?.primary || headerIconColor} />
-          </TouchableOpacity>
-
           {/* Admin Panel Icon - Only visible for authorized admins */}
           {user && ADMIN_EMAILS.includes(user.email?.toLowerCase()) && (
             <TouchableOpacity 
               onPress={() => router.push('/admin')} 
               style={styles.iconButton}
             >
-              <Ionicons name="shield-checkmark" size={22} color="#6366f1" />
+              <Ionicons name="shield-checkmark" size={22} color="#8B5CF6" />
             </TouchableOpacity>
           )}
 
