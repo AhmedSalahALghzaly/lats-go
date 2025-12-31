@@ -139,19 +139,25 @@ export default function LoginScreen() {
         return;
       }
       
+      console.log('Auth successful, setting user data...');
+      
       // ATOMIC UPDATE: Set all auth state in one go
-      // This triggers the reactive auth guard to navigate
       setUser(userData, session_token);
       if (userData.role) {
         setUserRole(userData.role);
       }
       
-      console.log('Auth successful, navigating to home...');
+      console.log('User set, will navigate via AuthGuard or manually...');
       
-      // Small delay to ensure state is updated before navigation
+      // The AuthGuard should handle navigation automatically
+      // But we add a fallback with longer delay to ensure state is synced
       setTimeout(() => {
-        router.replace('/(tabs)');
-      }, 100);
+        // Check if still on login page (AuthGuard didn't trigger)
+        if (window.location.pathname.includes('login')) {
+          console.log('Manual navigation fallback triggered');
+          router.replace('/(tabs)');
+        }
+      }, 500);
       
     } catch (error: any) {
       console.error('Auth error:', error?.response?.data || error?.message || error);
