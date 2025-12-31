@@ -268,8 +268,15 @@ async def get_current_user(request: Request):
     session = await db.sessions.find_one({"session_token": token})
     if not session:
         return None
-    if session.get("expires_at") and session["expires_at"] <= datetime.now(timezone.utc):
-        return None
+    # Handle both timezone-aware and naive datetimes for expires_at comparison
+    if session.get("expires_at"):
+        expires_at = session["expires_at"]
+        now = datetime.now(timezone.utc)
+        # If expires_at is naive, make it timezone-aware (assume UTC)
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at <= now:
+            return None
     user = await db.users.find_one({"_id": session["user_id"]})
     return serialize_doc(user) if user else None
 
