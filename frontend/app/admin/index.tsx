@@ -7,6 +7,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAppStore } from '../../src/store/appStore';
 import { Header } from '../../src/components/Header';
+import { AdminPerformanceDashboard } from '../../src/components/AdminPerformanceDashboard';
 
 const ADMIN_EMAILS = [
   'ahmed.salah.ghazaly.91@gmail.com',
