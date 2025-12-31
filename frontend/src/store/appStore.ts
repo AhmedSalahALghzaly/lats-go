@@ -405,6 +405,12 @@ export const useAppStore = create<AppState>()(
         distributors: state.distributors,
         dashboardLayout: state.dashboardLayout,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Called when hydration is finished
+        if (state) {
+          state.setHasHydrated(true);
+        }
+      },
     }
   )
 );
@@ -413,6 +419,7 @@ export const useAppStore = create<AppState>()(
 export const useUser = () => useAppStore((state) => state.user);
 export const useIsAuthenticated = () => useAppStore((state) => state.isAuthenticated);
 export const useUserRole = () => useAppStore((state) => state.userRole);
+export const useHasHydrated = () => useAppStore((state) => state._hasHydrated);
 export const useTheme = () => useAppStore((state) => state.theme);
 export const useLanguage = () => useAppStore((state) => state.language);
 export const useIsRTL = () => useAppStore((state) => state.isRTL);
