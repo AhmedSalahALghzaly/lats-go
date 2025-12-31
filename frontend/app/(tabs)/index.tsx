@@ -292,7 +292,7 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* 2. Offer Slider - SECOND */}
+        {/* 2. Dynamic Marketing Slider - SECOND */}
         <View style={styles.sliderSection}>
           <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -305,7 +305,8 @@ export default function HomeScreen() {
               </Text>
             </View>
           </View>
-          <OfferSlider />
+          {/* Dynamic slider that fetches from marketing API */}
+          <DynamicOfferSlider />
         </View>
 
         {/* 3. Car Models Section - THIRD */}
