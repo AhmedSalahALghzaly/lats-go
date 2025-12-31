@@ -84,6 +84,9 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchData();
+    // Start background sync service
+    syncService.start();
+    return () => syncService.stop();
   }, []);
 
   // Refetch favorites when user changes
