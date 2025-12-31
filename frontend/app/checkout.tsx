@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,43 +10,439 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolate,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  SlideInRight,
+  SlideOutLeft,
+} from 'react-native-reanimated';
 import { useTheme } from '../src/hooks/useTheme';
 import { useTranslation } from '../src/hooks/useTranslation';
-import { useAppStore } from '../src/store/appStore';
+import { useAppStore, NEON_NIGHT_THEME } from '../src/store/appStore';
 import { ordersApi } from '../src/services/api';
+import ConfettiEffect from '../src/components/ui/ConfettiEffect';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+// Step indicator component
+const StepIndicator = ({ currentStep, totalSteps, labels, isRTL, colors }: any) => {
+  return (
+    <View style={[styles.stepIndicatorContainer, isRTL && styles.rowReverse]}>
+      {labels.map((label: string, index: number) => {
+        const isActive = index <= currentStep;
+        const isCurrent = index === currentStep;
+        const isCompleted = index < currentStep;
+
+        return (
+          <React.Fragment key={index}>
+            {index > 0 && (
+              <View
+                style={[
+                  styles.stepLine,
+                  {
+                    backgroundColor: isActive
+                      ? NEON_NIGHT_THEME.primary
+                      : colors.border,
+                  },
+                ]}
+              />
+            )}
+            <View style={styles.stepItem}>
+              <Animated.View
+                entering={FadeIn.delay(index * 100)}
+                style={[
+                  styles.stepCircle,
+                  {
+                    backgroundColor: isActive
+                      ? NEON_NIGHT_THEME.primary
+                      : colors.surface,
+                    borderColor: isActive
+                      ? NEON_NIGHT_THEME.primary
+                      : colors.border,
+                  },
+                  isCurrent && styles.stepCircleCurrent,
+                ]}
+              >
+                {isCompleted ? (
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                ) : (
+                  <Text
+                    style={[
+                      styles.stepNumber,
+                      { color: isActive ? '#FFF' : colors.textSecondary },
+                    ]}
+                  >
+                    {index + 1}
+                  </Text>
+                )}
+              </Animated.View>
+              <Text
+                style={[
+                  styles.stepLabel,
+                  {
+                    color: isActive ? colors.text : colors.textSecondary,
+                    fontWeight: isCurrent ? '700' : '500',
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {label}
+              </Text>
+            </View>
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
+};
+
+// Step 1: Review Cart
+const ReviewStep = ({ cartItems, getTotal, language, isRTL, colors, onNext }: any) => (
+  <Animated.View
+    entering={SlideInRight.duration(300)}
+    exiting={SlideOutLeft.duration(300)}
+    style={styles.stepContent}
+  >
+    <Text style={[styles.stepTitle, { color: colors.text }, isRTL && styles.textRight]}>
+      {language === 'ar' ? 'مراجعة الطلب' : 'Review Your Order'}
+    </Text>
+    <Text style={[styles.stepSubtitle, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+      {language === 'ar' ? 'تأكد من صحة المنتجات والكميات' : 'Confirm your items and quantities'}
+    </Text>
+
+    <View style={[styles.cartReviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {cartItems.map((item: any, index: number) => (
+        <Animated.View
+          key={item.product_id || item.productId || index}
+          entering={FadeInDown.delay(index * 50)}
+          style={[
+            styles.reviewItem,
+            isRTL && styles.rowReverse,
+            index < cartItems.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+          ]}
+        >
+          <View style={styles.reviewItemImage}>
+            {item.product?.image ? (
+              <Image source={{ uri: item.product.image }} style={styles.reviewImg} resizeMode="cover" />
+            ) : (
+              <View style={[styles.reviewImgPlaceholder, { backgroundColor: colors.border }]}>
+                <Ionicons name="cube-outline" size={24} color={colors.textSecondary} />
+              </View>
+            )}
+          </View>
+          <View style={[styles.reviewItemInfo, isRTL && { alignItems: 'flex-end' }]}>
+            <Text style={[styles.reviewItemName, { color: colors.text }]} numberOfLines={2}>
+              {language === 'ar' ? item.product?.name_ar || item.product?.name : item.product?.name || 'Product'}
+            </Text>
+            <Text style={[styles.reviewItemQty, { color: colors.textSecondary }]}>
+              {language === 'ar' ? `الكمية: ${item.quantity}` : `Qty: ${item.quantity}`}
+            </Text>
+          </View>
+          <View style={styles.reviewItemPrice}>
+            {item.bundleDiscount && (
+              <Text style={[styles.reviewOriginalPrice, { color: colors.textSecondary }]}>
+                {(item.product?.price * item.quantity).toFixed(0)} ج.م
+              </Text>
+            )}
+            <Text style={[styles.reviewFinalPrice, { color: NEON_NIGHT_THEME.primary }]}>
+              {((item.discountedPrice || item.product?.price || 0) * item.quantity).toFixed(0)} ج.م
+            </Text>
+          </View>
+        </Animated.View>
+      ))}
+
+      <View style={[styles.reviewTotal, { borderTopColor: colors.border }, isRTL && styles.rowReverse]}>
+        <Text style={[styles.reviewTotalLabel, { color: colors.textSecondary }]}>
+          {language === 'ar' ? 'الإجمالي:' : 'Total:'}
+        </Text>
+        <Text style={[styles.reviewTotalValue, { color: NEON_NIGHT_THEME.primary }]}>
+          {getTotal().toFixed(0)} ج.م
+        </Text>
+      </View>
+    </View>
+  </Animated.View>
+);
+
+// Step 2: Shipping Details
+const ShippingStep = ({
+  shippingAddress,
+  setShippingAddress,
+  phone,
+  setPhone,
+  notes,
+  setNotes,
+  language,
+  isRTL,
+  colors,
+}: any) => (
+  <Animated.View
+    entering={SlideInRight.duration(300)}
+    exiting={SlideOutLeft.duration(300)}
+    style={styles.stepContent}
+  >
+    <Text style={[styles.stepTitle, { color: colors.text }, isRTL && styles.textRight]}>
+      {language === 'ar' ? 'بيانات التوصيل' : 'Shipping Details'}
+    </Text>
+    <Text style={[styles.stepSubtitle, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+      {language === 'ar' ? 'أدخل عنوان التوصيل ورقم الهاتف' : 'Enter your delivery address and phone'}
+    </Text>
+
+    <View style={styles.formGroup}>
+      <Text style={[styles.inputLabel, { color: colors.text }, isRTL && styles.textRight]}>
+        {language === 'ar' ? 'عنوان التوصيل *' : 'Shipping Address *'}
+      </Text>
+      <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Ionicons
+          name="location-outline"
+          size={20}
+          color={NEON_NIGHT_THEME.primary}
+          style={[styles.inputIcon, isRTL && { marginLeft: 12, marginRight: 0 }]}
+        />
+        <TextInput
+          style={[
+            styles.textAreaInput,
+            { color: colors.text },
+            isRTL && { textAlign: 'right' },
+          ]}
+          placeholder={language === 'ar' ? 'أدخل العنوان الكامل...' : 'Enter full address...'}
+          placeholderTextColor={colors.textSecondary}
+          value={shippingAddress}
+          onChangeText={setShippingAddress}
+          multiline
+          numberOfLines={3}
+        />
+      </View>
+    </View>
+
+    <View style={styles.formGroup}>
+      <Text style={[styles.inputLabel, { color: colors.text }, isRTL && styles.textRight]}>
+        {language === 'ar' ? 'رقم الهاتف *' : 'Phone Number *'}
+      </Text>
+      <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Ionicons
+          name="call-outline"
+          size={20}
+          color={NEON_NIGHT_THEME.primary}
+          style={[styles.inputIcon, isRTL && { marginLeft: 12, marginRight: 0 }]}
+        />
+        <TextInput
+          style={[
+            styles.textInput,
+            { color: colors.text },
+            isRTL && { textAlign: 'right' },
+          ]}
+          placeholder={language === 'ar' ? '01xxxxxxxxx' : '01xxxxxxxxx'}
+          placeholderTextColor={colors.textSecondary}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
+      </View>
+    </View>
+
+    <View style={styles.formGroup}>
+      <Text style={[styles.inputLabel, { color: colors.text }, isRTL && styles.textRight]}>
+        {language === 'ar' ? 'ملاحظات (اختياري)' : 'Notes (Optional)'}
+      </Text>
+      <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Ionicons
+          name="document-text-outline"
+          size={20}
+          color={NEON_NIGHT_THEME.primary}
+          style={[styles.inputIcon, isRTL && { marginLeft: 12, marginRight: 0 }]}
+        />
+        <TextInput
+          style={[
+            styles.textAreaInput,
+            { color: colors.text },
+            isRTL && { textAlign: 'right' },
+          ]}
+          placeholder={language === 'ar' ? 'ملاحظات إضافية...' : 'Additional notes...'}
+          placeholderTextColor={colors.textSecondary}
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          numberOfLines={3}
+        />
+      </View>
+    </View>
+  </Animated.View>
+);
+
+// Step 3: Confirmation
+const ConfirmStep = ({
+  cartItems,
+  getTotal,
+  shippingAddress,
+  phone,
+  notes,
+  language,
+  isRTL,
+  colors,
+}: any) => (
+  <Animated.View
+    entering={SlideInRight.duration(300)}
+    exiting={SlideOutLeft.duration(300)}
+    style={styles.stepContent}
+  >
+    <Text style={[styles.stepTitle, { color: colors.text }, isRTL && styles.textRight]}>
+      {language === 'ar' ? 'تأكيد الطلب' : 'Confirm Order'}
+    </Text>
+    <Text style={[styles.stepSubtitle, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+      {language === 'ar' ? 'راجع تفاصيل الطلب قبل التأكيد' : 'Review order details before confirming'}
+    </Text>
+
+    {/* Order Summary */}
+    <View style={[styles.confirmCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.confirmSection, isRTL && styles.rowReverse]}>
+        <View style={[styles.confirmIconCircle, { backgroundColor: `${NEON_NIGHT_THEME.primary}20` }]}>
+          <Ionicons name="cart" size={20} color={NEON_NIGHT_THEME.primary} />
+        </View>
+        <View style={styles.confirmSectionContent}>
+          <Text style={[styles.confirmSectionTitle, { color: colors.text }, isRTL && styles.textRight]}>
+            {language === 'ar' ? 'ملخص الطلب' : 'Order Summary'}
+          </Text>
+          <Text style={[styles.confirmSectionValue, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+            {cartItems.length} {language === 'ar' ? 'منتج' : 'items'} • {getTotal().toFixed(0)} ج.م
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
+
+      <View style={[styles.confirmSection, isRTL && styles.rowReverse]}>
+        <View style={[styles.confirmIconCircle, { backgroundColor: `${NEON_NIGHT_THEME.primary}20` }]}>
+          <Ionicons name="location" size={20} color={NEON_NIGHT_THEME.primary} />
+        </View>
+        <View style={styles.confirmSectionContent}>
+          <Text style={[styles.confirmSectionTitle, { color: colors.text }, isRTL && styles.textRight]}>
+            {language === 'ar' ? 'عنوان التوصيل' : 'Shipping Address'}
+          </Text>
+          <Text style={[styles.confirmSectionValue, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+            {shippingAddress}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
+
+      <View style={[styles.confirmSection, isRTL && styles.rowReverse]}>
+        <View style={[styles.confirmIconCircle, { backgroundColor: `${NEON_NIGHT_THEME.primary}20` }]}>
+          <Ionicons name="call" size={20} color={NEON_NIGHT_THEME.primary} />
+        </View>
+        <View style={styles.confirmSectionContent}>
+          <Text style={[styles.confirmSectionTitle, { color: colors.text }, isRTL && styles.textRight]}>
+            {language === 'ar' ? 'رقم الهاتف' : 'Phone'}
+          </Text>
+          <Text style={[styles.confirmSectionValue, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+            {phone}
+          </Text>
+        </View>
+      </View>
+
+      {notes ? (
+        <>
+          <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
+          <View style={[styles.confirmSection, isRTL && styles.rowReverse]}>
+            <View style={[styles.confirmIconCircle, { backgroundColor: `${NEON_NIGHT_THEME.primary}20` }]}>
+              <Ionicons name="document-text" size={20} color={NEON_NIGHT_THEME.primary} />
+            </View>
+            <View style={styles.confirmSectionContent}>
+              <Text style={[styles.confirmSectionTitle, { color: colors.text }, isRTL && styles.textRight]}>
+                {language === 'ar' ? 'ملاحظات' : 'Notes'}
+              </Text>
+              <Text style={[styles.confirmSectionValue, { color: colors.textSecondary }, isRTL && styles.textRight]}>
+                {notes}
+              </Text>
+            </View>
+          </View>
+        </>
+      ) : null}
+    </View>
+
+    {/* Payment Method */}
+    <View style={[styles.paymentCard, { backgroundColor: `${NEON_NIGHT_THEME.primary}15`, borderColor: NEON_NIGHT_THEME.primary }]}>
+      <View style={[styles.paymentRow, isRTL && styles.rowReverse]}>
+        <Ionicons name="cash-outline" size={24} color={NEON_NIGHT_THEME.primary} />
+        <Text style={[styles.paymentText, { color: colors.text }]}>
+          {language === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery'}
+        </Text>
+        <View style={[styles.paymentBadge, { backgroundColor: NEON_NIGHT_THEME.primary }]}>
+          <Text style={styles.paymentBadgeText}>COD</Text>
+        </View>
+      </View>
+    </View>
+  </Animated.View>
+);
 
 export default function CheckoutScreen() {
   const { colors } = useTheme();
-  const { t, isRTL } = useTranslation();
+  const { t, isRTL, language } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { cartItems, clearLocalCart, user } = useAppStore();
+  const { cartItems, clearLocalCart, user, clearCart } = useAppStore();
 
+  const [currentStep, setCurrentStep] = useState(0);
   const [shippingAddress, setShippingAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
-  const getTotal = () => {
+  const stepLabels = language === 'ar'
+    ? ['المراجعة', 'التوصيل', 'التأكيد']
+    : ['Review', 'Shipping', 'Confirm'];
+
+  const getTotal = useCallback(() => {
     return cartItems.reduce((sum, item) => {
-      return sum + (item.product?.price || 0) * item.quantity;
+      const price = item.discountedPrice || item.product?.price || 0;
+      return sum + price * item.quantity;
     }, 0);
+  }, [cartItems]);
+
+  const validateStep = () => {
+    if (currentStep === 1) {
+      if (!shippingAddress.trim()) {
+        Alert.alert('', language === 'ar' ? 'الرجاء إدخال عنوان التوصيل' : 'Please enter shipping address');
+        return false;
+      }
+      if (!phone.trim()) {
+        Alert.alert('', language === 'ar' ? 'الرجاء إدخال رقم الهاتف' : 'Please enter phone number');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (!validateStep()) return;
+    if (currentStep < 2) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      router.back();
+    }
   };
 
   const handlePlaceOrder = async () => {
-    if (!shippingAddress.trim()) {
-      Alert.alert('', t('shippingAddress') + ' required');
-      return;
-    }
-    if (!phone.trim()) {
-      Alert.alert('', t('phone') + ' required');
-      return;
-    }
-
     setLoading(true);
     try {
       await ordersApi.create({
@@ -54,22 +450,18 @@ export default function CheckoutScreen() {
         phone: phone,
         notes: notes || undefined,
       });
-      
-      clearLocalCart();
-      
-      Alert.alert(
-        '',
-        t('orderPlaced'),
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/orders'),
-          },
-        ]
-      );
+
+      setShowConfetti(true);
+      setOrderPlaced(true);
+
+      setTimeout(() => {
+        clearLocalCart();
+        clearCart();
+        router.replace('/orders');
+      }, 2500);
     } catch (error) {
       console.error('Error placing order:', error);
-      Alert.alert(t('error'));
+      Alert.alert(language === 'ar' ? 'خطأ' : 'Error', language === 'ar' ? 'فشل إرسال الطلب' : 'Failed to place order');
     } finally {
       setLoading(false);
     }
@@ -80,6 +472,25 @@ export default function CheckoutScreen() {
     return null;
   }
 
+  if (orderPlaced) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {showConfetti && <ConfettiEffect />}
+        <View style={styles.successContainer}>
+          <Animated.View entering={FadeIn.duration(500)} style={[styles.successIcon, { backgroundColor: `${NEON_NIGHT_THEME.primary}20` }]}>
+            <Ionicons name="checkmark-circle" size={64} color={NEON_NIGHT_THEME.primary} />
+          </Animated.View>
+          <Text style={[styles.successTitle, { color: colors.text }]}>
+            {language === 'ar' ? 'تم الطلب بنجاح!' : 'Order Placed Successfully!'}
+          </Text>
+          <Text style={[styles.successSubtitle, { color: colors.textSecondary }]}>
+            {language === 'ar' ? 'سيتم توجيهك لصفحة الطلبات...' : 'Redirecting to orders page...'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -87,131 +498,112 @@ export default function CheckoutScreen() {
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={[
-          styles.header, 
-          { backgroundColor: colors.background, borderBottomColor: colors.border, paddingTop: insets.top + 10 }
-        ]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons 
-              name={isRTL ? 'arrow-forward' : 'arrow-back'} 
-              size={24} 
-              color={colors.text} 
-            />
+        <View
+          style={[
+            styles.header,
+            { backgroundColor: colors.background, borderBottomColor: colors.border, paddingTop: insets.top + 10 },
+          ]}
+        >
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {t('checkout')}
+            {language === 'ar' ? 'إتمام الشراء' : 'Checkout'}
           </Text>
           <View style={styles.placeholder} />
+        </View>
+
+        {/* Step Indicator */}
+        <View style={[styles.stepIndicatorWrapper, { backgroundColor: colors.surface }]}>
+          <StepIndicator
+            currentStep={currentStep}
+            totalSteps={3}
+            labels={stepLabels}
+            isRTL={isRTL}
+            colors={colors}
+          />
         </View>
 
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Order Summary */}
-          <View style={[
-            styles.summaryCard,
-            { backgroundColor: colors.card, borderColor: colors.border }
-          ]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('myCart')}
-            </Text>
-            {cartItems.map((item) => (
-              <View key={item.product_id} style={styles.summaryItem}>
-                <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>
-                  {item.product?.name || 'Product'} x {item.quantity}
-                </Text>
-                <Text style={[styles.itemPrice, { color: colors.primary }]}>
-                  {((item.product?.price || 0) * item.quantity).toFixed(2)} ج.م
-                </Text>
-              </View>
-            ))}
-            <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
-              <Text style={[styles.totalLabel, { color: colors.text }]}>
-                {t('total')}
-              </Text>
-              <Text style={[styles.totalAmount, { color: colors.primary }]}>
-                {getTotal().toFixed(2)} ج.م
-              </Text>
-            </View>
-          </View>
-
-          {/* Shipping Form */}
-          <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('shippingAddress')}
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }
-              ]}
-              placeholder={t('shippingAddress')}
-              placeholderTextColor={colors.textSecondary}
-              value={shippingAddress}
-              onChangeText={setShippingAddress}
-              multiline
-              numberOfLines={3}
-              textAlign={isRTL ? 'right' : 'left'}
+          {currentStep === 0 && (
+            <ReviewStep
+              cartItems={cartItems}
+              getTotal={getTotal}
+              language={language}
+              isRTL={isRTL}
+              colors={colors}
             />
-
-            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 20 }]}>
-              {t('phone')}
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }
-              ]}
-              placeholder={t('phone')}
-              placeholderTextColor={colors.textSecondary}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              textAlign={isRTL ? 'right' : 'left'}
+          )}
+          {currentStep === 1 && (
+            <ShippingStep
+              shippingAddress={shippingAddress}
+              setShippingAddress={setShippingAddress}
+              phone={phone}
+              setPhone={setPhone}
+              notes={notes}
+              setNotes={setNotes}
+              language={language}
+              isRTL={isRTL}
+              colors={colors}
             />
-
-            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 20 }]}>
-              {t('notes')}
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }
-              ]}
-              placeholder={t('notes')}
-              placeholderTextColor={colors.textSecondary}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-              textAlign={isRTL ? 'right' : 'left'}
+          )}
+          {currentStep === 2 && (
+            <ConfirmStep
+              cartItems={cartItems}
+              getTotal={getTotal}
+              shippingAddress={shippingAddress}
+              phone={phone}
+              notes={notes}
+              language={language}
+              isRTL={isRTL}
+              colors={colors}
             />
-          </View>
+          )}
         </ScrollView>
 
-        {/* Place Order Button */}
-        <View style={[
-          styles.footer,
-          { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom + 16 }
-        ]}>
-          <TouchableOpacity
-            style={[styles.placeOrderButton, { backgroundColor: colors.primary }]}
-            onPress={handlePlaceOrder}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={22} color="#FFF" />
-                <Text style={styles.placeOrderText}>{t('placeOrder')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
+        {/* Footer */}
+        <View
+          style={[
+            styles.footer,
+            { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: insets.bottom + 16 },
+          ]}
+        >
+          {currentStep < 2 ? (
+            <TouchableOpacity
+              style={[styles.nextButton, { backgroundColor: NEON_NIGHT_THEME.primary }]}
+              onPress={handleNext}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.nextButtonText}>
+                {language === 'ar' ? 'التالي' : 'Next'}
+              </Text>
+              <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#FFF" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.placeOrderButton, { backgroundColor: NEON_NIGHT_THEME.primary }]}
+              onPress={handlePlaceOrder}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={22} color="#FFF" />
+                  <Text style={styles.placeOrderText}>
+                    {language === 'ar' ? 'تأكيد الطلب' : 'Place Order'}
+                  </Text>
+                  <Text style={styles.placeOrderPrice}>{getTotal().toFixed(0)} ج.م</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -235,87 +627,296 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   placeholder: {
     width: 40,
+  },
+  stepIndicatorWrapper: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  stepIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepItem: {
+    alignItems: 'center',
+    width: 70,
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  stepCircleCurrent: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  stepLabel: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  stepLine: {
+    width: 40,
+    height: 2,
+    marginHorizontal: 4,
+    marginBottom: 24,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 120,
   },
-  summaryCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  summaryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  itemName: {
-    fontSize: 14,
+  stepContent: {
     flex: 1,
+  },
+  stepTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  stepSubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  cartReviewCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  reviewItem: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+  },
+  reviewItemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    overflow: 'hidden',
     marginRight: 12,
   },
-  itemPrice: {
+  reviewImg: {
+    width: '100%',
+    height: '100%',
+  },
+  reviewImgPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewItemInfo: {
+    flex: 1,
+  },
+  reviewItemName: {
     fontSize: 14,
     fontWeight: '600',
+    marginBottom: 4,
+    lineHeight: 18,
   },
-  totalRow: {
+  reviewItemQty: {
+    fontSize: 12,
+  },
+  reviewItemPrice: {
+    alignItems: 'flex-end',
+    marginLeft: 12,
+  },
+  reviewOriginalPrice: {
+    fontSize: 11,
+    textDecorationLine: 'line-through',
+  },
+  reviewFinalPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  reviewTotal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
-    marginTop: 8,
-    borderTopWidth: 1,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  totalAmount: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  formSection: {
-    marginBottom: 24,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  footer: {
     padding: 16,
     borderTopWidth: 1,
+  },
+  reviewTotalLabel: {
+    fontSize: 14,
+  },
+  reviewTotalValue: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  inputIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+  textAreaInput: {
+    flex: 1,
+    fontSize: 15,
+    minHeight: 60,
+    textAlignVertical: 'top',
+    paddingVertical: 0,
+  },
+  confirmCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 4,
+    marginBottom: 16,
+  },
+  confirmSection: {
+    flexDirection: 'row',
+    padding: 14,
+    alignItems: 'flex-start',
+  },
+  confirmIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  confirmSectionContent: {
+    flex: 1,
+  },
+  confirmSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  confirmSectionValue: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  confirmDivider: {
+    height: 1,
+    marginHorizontal: 14,
+  },
+  paymentCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  paymentText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  paymentBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  paymentBadgeText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  nextButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 14,
+  },
+  nextButtonText: {
+    color: '#FFF',
+    fontSize: 17,
+    fontWeight: '700',
   },
   placeOrderButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     gap: 10,
   },
   placeOrderText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
+  },
+  placeOrderPrice: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  successIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  successSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  rowReverse: {
+    flexDirection: 'row-reverse',
+  },
+  textRight: {
+    textAlign: 'right',
   },
 });
