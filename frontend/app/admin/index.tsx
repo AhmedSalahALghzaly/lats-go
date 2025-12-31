@@ -78,6 +78,8 @@ export default function AdminPanel() {
           </View>
         </View>
 
+        <AdminPerformanceDashboard />
+
         <View style={styles.sectionsContainer}>
           {ADMIN_SECTIONS.map((section) => (
             <TouchableOpacity
