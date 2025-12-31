@@ -1527,6 +1527,254 @@ async def add_comment(product_id: str, data: CommentCreate, request: Request):
     await db.comments.insert_one(comment)
     return {**serialize_doc(comment), "is_owner": True}
 
+# ==================== Promotion Routes (Marketing System) ====================
+
+@api_router.get("/promotions")
+async def get_promotions(promotion_type: Optional[str] = None, active_only: bool = False):
+    """Get all promotions - public endpoint for displaying on home screen"""
+    query = {"deleted_at": None}
+    if promotion_type:
+        query["promotion_type"] = promotion_type
+    if active_only:
+        query["is_active"] = True
+    
+    promotions = await db.promotions.find(query).sort("sort_order", 1).to_list(1000)
+    result = []
+    for promo in promotions:
+        p_data = serialize_doc(promo)
+        # Include target info
+        if promo.get("target_product_id"):
+            product = await db.products.find_one({"_id": promo["target_product_id"]})
+            p_data["target_product"] = serialize_doc(product) if product else None
+        if promo.get("target_car_model_id"):
+            model = await db.car_models.find_one({"_id": promo["target_car_model_id"]})
+            p_data["target_car_model"] = serialize_doc(model) if model else None
+        result.append(p_data)
+    return result
+
+@api_router.get("/promotions/{promotion_id}")
+async def get_promotion(promotion_id: str):
+    promo = await db.promotions.find_one({"_id": promotion_id})
+    if not promo:
+        raise HTTPException(status_code=404, detail="Promotion not found")
+    p_data = serialize_doc(promo)
+    if promo.get("target_product_id"):
+        product = await db.products.find_one({"_id": promo["target_product_id"]})
+        p_data["target_product"] = serialize_doc(product) if product else None
+    if promo.get("target_car_model_id"):
+        model = await db.car_models.find_one({"_id": promo["target_car_model_id"]})
+        p_data["target_car_model"] = serialize_doc(model) if model else None
+    return p_data
+
+@api_router.post("/promotions")
+async def create_promotion(data: PromotionCreate, request: Request):
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Validate targeting - must have one target
+    if not data.target_product_id and not data.target_car_model_id:
+        raise HTTPException(status_code=400, detail="Must select either a product or car model target")
+    
+    promotion = {
+        "_id": f"promo_{uuid.uuid4().hex[:8]}",
+        **data.dict(),
+        "created_by": user["id"] if user else None,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        "deleted_at": None,
+    }
+    await db.promotions.insert_one(promotion)
+    await manager.broadcast({"type": "sync", "tables": ["promotions"]})
+    return serialize_doc(promotion)
+
+@api_router.put("/promotions/{promotion_id}")
+async def update_promotion(promotion_id: str, data: PromotionCreate, request: Request):
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.promotions.update_one(
+        {"_id": promotion_id},
+        {"$set": {**data.dict(), "updated_at": datetime.now(timezone.utc)}}
+    )
+    await manager.broadcast({"type": "sync", "tables": ["promotions"]})
+    return {"message": "Updated"}
+
+@api_router.patch("/promotions/{promotion_id}/reorder")
+async def reorder_promotion(promotion_id: str, request: Request):
+    """Update sort order for a promotion"""
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    body = await request.json()
+    sort_order = body.get("sort_order", 0)
+    
+    await db.promotions.update_one(
+        {"_id": promotion_id},
+        {"$set": {"sort_order": sort_order, "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"message": "Reordered"}
+
+@api_router.delete("/promotions/{promotion_id}")
+async def delete_promotion(promotion_id: str, request: Request):
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.promotions.update_one({"_id": promotion_id}, {"$set": {"deleted_at": datetime.now(timezone.utc)}})
+    await manager.broadcast({"type": "sync", "tables": ["promotions"]})
+    return {"message": "Deleted"}
+
+# ==================== Bundle Offer Routes (Marketing System) ====================
+
+@api_router.get("/bundle-offers")
+async def get_bundle_offers(active_only: bool = False):
+    """Get all bundle offers - public endpoint"""
+    query = {"deleted_at": None}
+    if active_only:
+        query["is_active"] = True
+    
+    offers = await db.bundle_offers.find(query).sort("created_at", -1).to_list(1000)
+    result = []
+    for offer in offers:
+        o_data = serialize_doc(offer)
+        # Include target car model
+        if offer.get("target_car_model_id"):
+            model = await db.car_models.find_one({"_id": offer["target_car_model_id"]})
+            o_data["target_car_model"] = serialize_doc(model) if model else None
+        # Include products
+        if offer.get("product_ids"):
+            products = await db.products.find({"_id": {"$in": offer["product_ids"]}}).to_list(100)
+            o_data["products"] = [serialize_doc(p) for p in products]
+            # Calculate original and discounted totals
+            original_total = sum(p.get("price", 0) for p in products)
+            discounted_total = original_total * (1 - offer.get("discount_percentage", 0) / 100)
+            o_data["original_total"] = original_total
+            o_data["discounted_total"] = round(discounted_total, 2)
+            o_data["savings"] = round(original_total - discounted_total, 2)
+        result.append(o_data)
+    return result
+
+@api_router.get("/bundle-offers/{offer_id}")
+async def get_bundle_offer(offer_id: str):
+    offer = await db.bundle_offers.find_one({"_id": offer_id})
+    if not offer:
+        raise HTTPException(status_code=404, detail="Bundle offer not found")
+    
+    o_data = serialize_doc(offer)
+    if offer.get("target_car_model_id"):
+        model = await db.car_models.find_one({"_id": offer["target_car_model_id"]})
+        o_data["target_car_model"] = serialize_doc(model) if model else None
+    if offer.get("product_ids"):
+        products = await db.products.find({"_id": {"$in": offer["product_ids"]}}).to_list(100)
+        o_data["products"] = [serialize_doc(p) for p in products]
+        original_total = sum(p.get("price", 0) for p in products)
+        discounted_total = original_total * (1 - offer.get("discount_percentage", 0) / 100)
+        o_data["original_total"] = original_total
+        o_data["discounted_total"] = round(discounted_total, 2)
+        o_data["savings"] = round(original_total - discounted_total, 2)
+    return o_data
+
+@api_router.post("/bundle-offers")
+async def create_bundle_offer(data: BundleOfferCreate, request: Request):
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    offer = {
+        "_id": f"bundle_{uuid.uuid4().hex[:8]}",
+        **data.dict(),
+        "created_by": user["id"] if user else None,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        "deleted_at": None,
+    }
+    await db.bundle_offers.insert_one(offer)
+    await manager.broadcast({"type": "sync", "tables": ["bundle_offers"]})
+    return serialize_doc(offer)
+
+@api_router.put("/bundle-offers/{offer_id}")
+async def update_bundle_offer(offer_id: str, data: BundleOfferCreate, request: Request):
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.bundle_offers.update_one(
+        {"_id": offer_id},
+        {"$set": {**data.dict(), "updated_at": datetime.now(timezone.utc)}}
+    )
+    await manager.broadcast({"type": "sync", "tables": ["bundle_offers"]})
+    return {"message": "Updated"}
+
+@api_router.delete("/bundle-offers/{offer_id}")
+async def delete_bundle_offer(offer_id: str, request: Request):
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.bundle_offers.update_one({"_id": offer_id}, {"$set": {"deleted_at": datetime.now(timezone.utc)}})
+    await manager.broadcast({"type": "sync", "tables": ["bundle_offers"]})
+    return {"message": "Deleted"}
+
+# ==================== Combined Marketing Data Endpoint ====================
+
+@api_router.get("/marketing/home-slider")
+async def get_home_slider_data():
+    """Get combined slider data for home screen - mix of promotions and bundle offers"""
+    # Get active sliders
+    sliders = await db.promotions.find({
+        "deleted_at": None,
+        "is_active": True,
+        "promotion_type": "slider"
+    }).sort("sort_order", 1).to_list(100)
+    
+    # Get active bundle offers
+    offers = await db.bundle_offers.find({
+        "deleted_at": None,
+        "is_active": True
+    }).sort("created_at", -1).to_list(100)
+    
+    result = []
+    
+    # Process sliders
+    for promo in sliders:
+        p_data = serialize_doc(promo)
+        p_data["type"] = "promotion"
+        if promo.get("target_product_id"):
+            product = await db.products.find_one({"_id": promo["target_product_id"]})
+            p_data["target_product"] = serialize_doc(product) if product else None
+        if promo.get("target_car_model_id"):
+            model = await db.car_models.find_one({"_id": promo["target_car_model_id"]})
+            p_data["target_car_model"] = serialize_doc(model) if model else None
+        result.append(p_data)
+    
+    # Process bundle offers
+    for offer in offers:
+        o_data = serialize_doc(offer)
+        o_data["type"] = "bundle_offer"
+        if offer.get("target_car_model_id"):
+            model = await db.car_models.find_one({"_id": offer["target_car_model_id"]})
+            o_data["target_car_model"] = serialize_doc(model) if model else None
+        if offer.get("product_ids"):
+            products = await db.products.find({"_id": {"$in": offer["product_ids"]}}).to_list(100)
+            original_total = sum(p.get("price", 0) for p in products)
+            discounted_total = original_total * (1 - offer.get("discount_percentage", 0) / 100)
+            o_data["original_total"] = original_total
+            o_data["discounted_total"] = round(discounted_total, 2)
+            o_data["product_count"] = len(products)
+        result.append(o_data)
+    
+    return result
+
 # ==================== Sync Routes ====================
 
 @api_router.post("/sync/pull")
