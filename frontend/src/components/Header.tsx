@@ -36,7 +36,13 @@ export const Header: React.FC<HeaderProps> = ({
   const { t, isRTL } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { toggleTheme, language, setLanguage, cartCount, user } = useAppStore();
+  const toggleTheme = useAppStore((state) => state.setTheme);
+  const theme = useAppStore((state) => state.theme);
+  const language = useAppStore((state) => state.language);
+  const setLanguage = useAppStore((state) => state.setLanguage);
+  const cartItems = useAppStore((state) => state.cartItems);
+  const user = useAppStore((state) => state.user);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // Header is always white background
   const headerBgColor = '#FFFFFF';
