@@ -54,6 +54,20 @@ export default function CarBrandsAdmin() {
     setToastVisible(true);
   };
 
+  const resetForm = () => {
+    setName('');
+    setNameAr('');
+    setLogoImage('');
+    setLogoUrl('');
+    setEditingBrand(null);
+    setError('');
+  };
+
+  const pickImage = () => {
+    // Image picker functionality would go here
+    // For now, this is a placeholder
+  };
+
   const handleSave = async () => {
     if (!name.trim() || !nameAr.trim()) {
       setError(language === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields');
