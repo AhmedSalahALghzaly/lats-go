@@ -158,7 +158,9 @@ interface AppState {
   
   // Actions
   setUser: (user: User | null, token?: string | null) => void;
+  setSessionToken: (token: string | null) => void;
   setUserRole: (role: UserRole) => void;
+  setHasHydrated: (hydrated: boolean) => void;
   logout: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setLanguage: (language: 'en' | 'ar') => void;
