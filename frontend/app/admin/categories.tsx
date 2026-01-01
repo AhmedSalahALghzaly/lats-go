@@ -26,6 +26,18 @@ export default function CategoriesAdmin() {
   const [nameAr, setNameAr] = useState('');
   const [parentId, setParentId] = useState<string | null>(null);
   const [icon, setIcon] = useState('');
+  const [categoryImage, setCategoryImage] = useState<string>('');
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
 
   useEffect(() => {
     fetchCategories();
