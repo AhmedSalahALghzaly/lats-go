@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Al-Ghazaly Auto Parts",
+    "slug": "alghazaly-auto",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "alghazaly",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
