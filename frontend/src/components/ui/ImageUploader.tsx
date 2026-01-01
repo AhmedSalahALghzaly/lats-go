@@ -1,9 +1,9 @@
 /**
  * Reusable Image Uploader Component
- * Modern 2025 UX with animations, drag feedback, and progress
- * Opens device gallery/folders to select images
+ * Opens device gallery/folders to select images directly
+ * Modern 2025 UX with animations and progress
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 interface ImageUploaderProps {
   mode: 'single' | 'multiple';
-  value: string | string[];  // single URL or array of URLs
+  value: string | string[];
   onChange: (value: string | string[]) => void;
   placeholder?: string;
   maxImages?: number;
@@ -58,56 +58,168 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const { language, isRTL } = useTranslation();
   
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const [showMenu, setShowMenu] = useState(false);
-  
-  const {
-    pickImage,
-    pickMultipleImages,
-    takePhoto,
-    uploadProgress,
-    progressAnim,
-    lastError,
-    clearError,
-  } = useCloudUpload({
-    aspect: aspectRatio,
-    onSuccess: (urls) => {
-      if (mode === 'single') {
-        onChange(urls[0]);
-      } else {
-        const currentUrls = Array.isArray(value) ? value : [];
-        const newUrls = [...currentUrls, ...urls].slice(0, maxImages);
-        onChange(newUrls);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Request media library permissions
+  const requestPermissions = async (): Promise<boolean> => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          language === 'ar' ? 'صلاحية مطلوبة' : 'Permission Required',
+          language === 'ar' 
+            ? 'يرجى السماح بالوصول إلى مكتبة الصور من الإعدادات' 
+            : 'Please allow access to your photo library from settings'
+        );
+        return false;
       }
-    },
-  });
-
-  // Pulse animation for upload button
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    if (!value || (Array.isArray(value) && value.length === 0)) {
-      pulse.start();
+      return true;
+    } catch (err) {
+      console.error('Permission error:', err);
+      return false;
     }
-    return () => pulse.stop();
-  }, [value, pulseAnim]);
+  };
 
+  // Request camera permissions
+  const requestCameraPermissions = async (): Promise<boolean> => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          language === 'ar' ? 'صلاحية مطلوبة' : 'Permission Required',
+          language === 'ar' 
+            ? 'يرجى السماح بالوصول إلى الكاميرا من الإعدادات' 
+            : 'Please allow access to your camera from settings'
+        );
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Camera permission error:', err);
+      return false;
+    }
+  };
+
+  // Pick image from gallery - OPENS DEVICE FOLDERS
+  const pickImageFromGallery = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Provide haptic feedback
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      // Launch image picker - This opens the device's gallery/file picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: aspectRatio,
+        quality: 0.7,
+        base64: true,
+        allowsMultipleSelection: mode === 'multiple',
+        selectionLimit: mode === 'multiple' ? maxImages - (Array.isArray(value) ? value.length : 0) : 1,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newImages: string[] = [];
+        
+        for (const asset of result.assets) {
+          if (asset.base64) {
+            const mimeType = asset.mimeType || 'image/jpeg';
+            const base64Url = `data:${mimeType};base64,${asset.base64}`;
+            newImages.push(base64Url);
+          } else if (asset.uri) {
+            // Fallback to URI if base64 not available
+            newImages.push(asset.uri);
+          }
+        }
+
+        if (newImages.length > 0) {
+          if (mode === 'single') {
+            onChange(newImages[0]);
+          } else {
+            const currentUrls = Array.isArray(value) ? value : [];
+            onChange([...currentUrls, ...newImages].slice(0, maxImages));
+          }
+          
+          if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Error picking image:', err);
+      setError(language === 'ar' ? 'فشل في اختيار الصورة' : 'Failed to pick image');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Take photo with camera
+  const takePhotoWithCamera = async () => {
+    const hasPermission = await requestCameraPermissions();
+    if (!hasPermission) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: aspectRatio,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        let imageUrl = '';
+        
+        if (asset.base64) {
+          const mimeType = asset.mimeType || 'image/jpeg';
+          imageUrl = `data:${mimeType};base64,${asset.base64}`;
+        } else if (asset.uri) {
+          imageUrl = asset.uri;
+        }
+
+        if (imageUrl) {
+          if (mode === 'single') {
+            onChange(imageUrl);
+          } else {
+            const currentUrls = Array.isArray(value) ? value : [];
+            if (currentUrls.length < maxImages) {
+              onChange([...currentUrls, imageUrl]);
+            }
+          }
+          
+          if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Error taking photo:', err);
+      setError(language === 'ar' ? 'فشل في التقاط الصورة' : 'Failed to capture photo');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle press - show options or directly open gallery
   const handlePress = () => {
-    if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (disabled || isLoading) return;
     
+    // Animate button press
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 0.95,
@@ -120,81 +232,39 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-    
-    if (allowCamera) {
-      setShowMenu(true);
-      showUploadOptions();
+
+    if (allowCamera && Platform.OS !== 'web') {
+      // Show options dialog for camera or gallery
+      Alert.alert(
+        language === 'ar' ? 'اختر الصورة' : 'Select Image',
+        language === 'ar' ? 'من أين تريد اختيار الصورة؟' : 'Where would you like to get the image from?',
+        [
+          {
+            text: language === 'ar' ? 'الكاميرا' : 'Camera',
+            onPress: takePhotoWithCamera,
+          },
+          {
+            text: language === 'ar' ? 'المعرض' : 'Gallery',
+            onPress: pickImageFromGallery,
+          },
+          {
+            text: language === 'ar' ? 'إلغاء' : 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
     } else {
-      handlePickFromGallery();
+      // Directly open gallery
+      pickImageFromGallery();
     }
   };
 
-  const showUploadOptions = () => {
-    Alert.alert(
-      language === 'ar' ? 'اختر الصورة' : 'Choose Image',
-      language === 'ar' ? 'من أين تريد اختيار الصورة؟' : 'Where do you want to get the image from?',
-      [
-        {
-          text: language === 'ar' ? 'الكاميرا' : 'Camera',
-          onPress: handleTakePhoto,
-        },
-        {
-          text: language === 'ar' ? 'المعرض' : 'Gallery',
-          onPress: handlePickFromGallery,
-        },
-        {
-          text: language === 'ar' ? 'إلغاء' : 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
-  };
-
-  const handlePickFromGallery = async () => {
-    if (mode === 'multiple') {
-      const currentCount = Array.isArray(value) ? value.length : 0;
-      const remaining = maxImages - currentCount;
-      if (remaining <= 0) {
-        Alert.alert(
-          language === 'ar' ? 'الحد الأقصى' : 'Max Reached',
-          language === 'ar' 
-            ? `يمكنك إضافة ${maxImages} صور فقط`
-            : `You can only add ${maxImages} images`
-        );
-        return;
-      }
-      await pickMultipleImages(remaining);
-    } else {
-      await pickImage();
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    if (mode === 'multiple') {
-      const currentCount = Array.isArray(value) ? value.length : 0;
-      if (currentCount >= maxImages) {
-        Alert.alert(
-          language === 'ar' ? 'الحد الأقصى' : 'Max Reached',
-          language === 'ar' 
-            ? `يمكنك إضافة ${maxImages} صور فقط`
-            : `You can only add ${maxImages} images`
-        );
-        return;
-      }
-    }
-    const url = await takePhoto();
-    if (url) {
-      if (mode === 'single') {
-        onChange(url);
-      } else {
-        const currentUrls = Array.isArray(value) ? value : [];
-        onChange([...currentUrls, url].slice(0, maxImages));
-      }
-    }
-  };
-
+  // Remove image
   const handleRemoveImage = (index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    
     if (mode === 'single') {
       onChange('');
     } else {
@@ -222,11 +292,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const borderRadius = getBorderRadius();
-  const hasImages = mode === 'single' 
-    ? !!value 
-    : Array.isArray(value) && value.length > 0;
 
-  // Render single image mode
+  // Single image mode
   if (mode === 'single') {
     return (
       <View style={styles.container}>
@@ -250,23 +317,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 height: dimensions.container,
                 borderRadius,
                 backgroundColor: colors.surface,
-                borderColor: lastError ? colors.error : colors.border,
+                borderColor: error ? colors.error : colors.border,
               },
               disabled && styles.disabled,
             ]}
             onPress={handlePress}
-            disabled={disabled || uploadProgress.isUploading}
+            disabled={disabled || isLoading}
             activeOpacity={0.7}
           >
-            {uploadProgress.isUploading ? (
-              <View style={styles.uploadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                {showProgress && (
-                  <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-                    {uploadProgress.progress}%
-                  </Text>
-                )}
-              </View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : value ? (
               <View style={styles.imageContainer}>
                 <Image
@@ -282,49 +342,29 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 </TouchableOpacity>
               </View>
             ) : (
-              <Animated.View style={[styles.placeholderContent, { transform: [{ scale: pulseAnim }] }]}>
+              <View style={styles.placeholderContent}>
                 <LinearGradient
                   colors={[colors.primary + '20', colors.primary + '10']}
                   style={[styles.iconCircle, { borderRadius: dimensions.icon }]}
                 >
-                  <Ionicons name="camera" size={dimensions.icon * 0.6} color={colors.primary} />
+                  <Ionicons name="image" size={dimensions.icon * 0.6} color={colors.primary} />
                 </LinearGradient>
                 <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                  {placeholder || (language === 'ar' ? 'اختر صورة' : 'Choose Image')}
+                  {placeholder || (language === 'ar' ? 'اختر صورة' : 'Select Image')}
                 </Text>
-              </Animated.View>
+              </View>
             )}
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Progress Bar */}
-        {showProgress && uploadProgress.isUploading && (
-          <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                {
-                  backgroundColor: colors.primary,
-                  width: progressAnim.interpolate({
-                    inputRange: [0, 100],
-                    outputRange: ['0%', '100%'],
-                  }),
-                },
-              ]}
-            />
-          </View>
-        )}
-
-        {lastError && (
-          <Text style={[styles.errorText, { color: colors.error }]}>
-            {lastError}
-          </Text>
+        {error && (
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
         )}
       </View>
     );
   }
 
-  // Render multiple images mode
+  // Multiple images mode
   const images = Array.isArray(value) ? value : [];
   const canAddMore = images.length < maxImages;
 
@@ -392,15 +432,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 },
               ]}
               onPress={handlePress}
-              disabled={disabled || uploadProgress.isUploading}
+              disabled={disabled || isLoading}
             >
-              {uploadProgress.isUploading ? (
-                <View style={styles.uploadingContainer}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.progressSmall, { color: colors.textSecondary }]}>
-                    {uploadProgress.currentFile}/{uploadProgress.totalFiles}
-                  </Text>
-                </View>
+              {isLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <>
                   <Ionicons name="add" size={24} color={colors.primary} />
@@ -414,28 +449,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         )}
       </ScrollView>
 
-      {/* Progress Bar */}
-      {showProgress && uploadProgress.isUploading && (
-        <View style={[styles.progressBar, { backgroundColor: colors.border, marginTop: 12 }]}>
-          <Animated.View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: colors.primary,
-                width: progressAnim.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
-        </View>
-      )}
-
-      {lastError && (
-        <Text style={[styles.errorText, { color: colors.error }]}>
-          {lastError}
-        </Text>
+      {error && (
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
       )}
     </View>
   );
@@ -504,25 +519,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
   },
-  uploadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  progressBar: {
-    height: 4,
-    borderRadius: 2,
-    marginTop: 8,
-    overflow: 'hidden',
-    width: 120,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
   errorText: {
     fontSize: 12,
     marginTop: 6,
@@ -558,10 +554,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addMoreText: {
-    fontSize: 10,
-    marginTop: 2,
-  },
-  progressSmall: {
     fontSize: 10,
     marginTop: 2,
   },
