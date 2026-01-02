@@ -679,24 +679,34 @@ export default function CheckoutScreen() {
               <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color="#FFF" />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity
-              style={[styles.placeOrderButton, { backgroundColor: NEON_NIGHT_THEME.primary }]}
-              onPress={handlePlaceOrder}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={22} color="#FFF" />
-                  <Text style={styles.placeOrderText}>
-                    {language === 'ar' ? 'تأكيد الطلب' : 'Place Order'}
+            <View>
+              {getTotalSavings() > 0 && (
+                <View style={[styles.footerSavingsRow, isRTL && styles.rowReverse]}>
+                  <Ionicons name="sparkles" size={14} color={NEON_NIGHT_THEME.accent} />
+                  <Text style={[styles.footerSavingsText, { color: NEON_NIGHT_THEME.accent }]}>
+                    {language === 'ar' ? `توفير ${getTotalSavings().toFixed(0)} ج.م` : `Saving ${getTotalSavings().toFixed(0)} EGP`}
                   </Text>
-                  <Text style={styles.placeOrderPrice}>{getTotal().toFixed(0)} ج.م</Text>
-                </>
+                </View>
               )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.placeOrderButton, { backgroundColor: NEON_NIGHT_THEME.primary }]}
+                onPress={handlePlaceOrder}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={22} color="#FFF" />
+                    <Text style={styles.placeOrderText}>
+                      {language === 'ar' ? 'تأكيد الطلب' : 'Place Order'}
+                    </Text>
+                    <Text style={styles.placeOrderPrice}>{getTotal().toFixed(0)} ج.م</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </View>
