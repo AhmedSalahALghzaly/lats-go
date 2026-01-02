@@ -1061,4 +1061,35 @@ const styles = StyleSheet.create({
   textRight: {
     textAlign: 'right',
   },
+  orderPriceBreakdown: {
+    marginTop: 4,
+  },
+  confirmSavingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  confirmOriginalPrice: {
+    fontSize: 13,
+    textDecorationLine: 'line-through',
+  },
+  confirmSavingsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  confirmSavingsText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  confirmFinalPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 4,
+  },
 });
