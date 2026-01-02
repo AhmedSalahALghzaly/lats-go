@@ -171,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
               onPress={() => router.push('/(tabs)/cart')} 
               style={styles.iconButton}
             >
-              <Ionicons name="cart-outline" size={22} color={headerIconColor} />
+              <Ionicons name="bag-handle-outline" size={22} color={headerIconColor} />
               {cartCount > 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.error }]}>
                   <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
