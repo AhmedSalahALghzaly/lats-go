@@ -372,7 +372,10 @@ class APITester:
                 elif method == "PUT":
                     response = self.session.put(f"{BASE_URL}{endpoint}", json={})
                 elif method == "PATCH":
-                    response = self.session.patch(f"{BASE_URL}{endpoint}", json={})
+                    if "?" in endpoint:
+                        response = self.session.patch(f"{BASE_URL}{endpoint}")
+                    else:
+                        response = self.session.patch(f"{BASE_URL}{endpoint}", json={})
                 elif method == "DELETE":
                     response = self.session.delete(f"{BASE_URL}{endpoint}")
                 
