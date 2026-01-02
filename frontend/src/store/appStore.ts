@@ -487,7 +487,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'alghazaly-app-storage-v3',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => createWebSafeStorage()),
       partialize: (state) => ({
         user: state.user,
         sessionToken: state.sessionToken,
