@@ -1829,7 +1829,8 @@ async def update_order_status(order_id: str, status: str, request: Request):
 async def get_customers(request: Request, sort_by: str = "created_at"):
     user = await get_current_user(request)
     role = await get_user_role(user) if user else "guest"
-    if role not in ["owner", "partner"]:
+    # Allow owners, partners, and admins to access customer data
+    if role not in ["owner", "partner", "admin"]:
         raise HTTPException(status_code=403, detail="Access denied")
     
     customers = await db.users.find({"deleted_at": None}).to_list(10000)
