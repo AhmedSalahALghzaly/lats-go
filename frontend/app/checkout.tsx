@@ -600,6 +600,8 @@ export default function CheckoutScreen() {
             <ReviewStep
               cartItems={cartItems}
               getTotal={getTotal}
+              getOriginalTotal={getOriginalTotal}
+              getTotalSavings={getTotalSavings}
               language={language}
               isRTL={isRTL}
               colors={colors}
