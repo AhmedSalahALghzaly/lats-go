@@ -325,8 +325,7 @@ class APITester:
 
         # Test PATCH /api/orders/{order_id}/status
         try:
-            status_data = {"status": "preparing"}
-            response = self.session.patch(f"{API_BASE}/orders/{test_order_id}/status", json=status_data)
+            response = self.session.patch(f"{API_BASE}/orders/{test_order_id}/status?status=preparing")
             
             if response.status_code == 401:
                 self.log_result("PATCH /api/orders/{order_id}/status (unauthenticated)", True, "Correctly requires authentication")
