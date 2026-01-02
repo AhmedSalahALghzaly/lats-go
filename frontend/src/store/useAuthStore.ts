@@ -44,6 +44,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       userRole: 'guest',
       _hasHydrated: false,
+      lastRoleRefresh: null,
 
       setUser: (user, token = null) => {
         set({
@@ -66,7 +67,49 @@ export const useAuthStore = create<AuthState>()(
           sessionToken: null,
           isAuthenticated: false,
           userRole: 'guest',
+          lastRoleRefresh: null,
         });
+      },
+
+      // Refresh user role from server - call this on app focus/login
+      refreshUserFromServer: async () => {
+        const { isAuthenticated } = get();
+        if (!isAuthenticated) return;
+        
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include',
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.user) {
+              const serverRole = data.user.role || 'user';
+              set({
+                user: {
+                  ...get().user!,
+                  ...data.user,
+                  role: serverRole,
+                },
+                userRole: serverRole,
+                lastRoleRefresh: Date.now(),
+              });
+            }
+          }
+        } catch (error) {
+          console.log('Failed to refresh user from server:', error);
+        }
+      },
+
+      // Update user role immediately (for local optimistic updates)
+      updateUserRole: (role) => {
+        const { user } = get();
+        if (user) {
+          set({
+            user: { ...user, role },
+            userRole: role,
+          });
+        }
       },
     }),
     {
@@ -77,10 +120,15 @@ export const useAuthStore = create<AuthState>()(
         sessionToken: state.sessionToken,
         isAuthenticated: state.isAuthenticated,
         userRole: state.userRole,
+        lastRoleRefresh: state.lastRoleRefresh,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHasHydrated(true);
+          // Refresh user role from server on app startup
+          setTimeout(() => {
+            state.refreshUserFromServer();
+          }, 1000);
         }
       },
     }
