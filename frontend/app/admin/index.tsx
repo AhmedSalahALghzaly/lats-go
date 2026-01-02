@@ -255,6 +255,16 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     marginRight: 16,
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 15,
+  },
   accessDenied: {
     flex: 1,
     alignItems: 'center',
@@ -270,5 +280,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
+  },
+  accessDeniedHint: {
+    fontSize: 13,
+    marginTop: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
