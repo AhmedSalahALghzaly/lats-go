@@ -155,14 +155,20 @@ export default function TabLayout() {
           name="profile"
           options={{
             title: language === 'ar' ? 'بحث' : 'Search',
+            href: null, // Prevent default navigation
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="search" size={size} color={color} />
             ),
             tabBarButton: (props) => (
               <TouchableOpacity
-                {...props}
                 onPress={() => setShowSearch(true)}
-                style={[props.style, { alignItems: 'center', justifyContent: 'center' }]}
+                style={[{ 
+                  flex: 1,
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  paddingVertical: 8,
+                }]}
+                activeOpacity={0.7}
               >
                 <Ionicons 
                   name="search" 
@@ -179,12 +185,6 @@ export default function TabLayout() {
                 </Text>
               </TouchableOpacity>
             ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              setShowSearch(true);
-            },
           }}
         />
       </Tabs>
