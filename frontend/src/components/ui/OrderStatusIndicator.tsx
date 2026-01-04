@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
   withSequence,
   Easing,
-  cancelAnimation,
+  interpolate,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -33,84 +33,88 @@ export const OrderStatusIndicator = ({
   activeOrderCount = 0,
   size = 28,
 }) => {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.6);
-  const arrowOpacity = useSharedValue(0.3);
+  const pulseAnim = useSharedValue(1);
+  const glowAnim = useSharedValue(0);
+  const arrowAnim = useSharedValue(0);
 
   const config = STATUS_CONFIG[status] || STATUS_CONFIG['no_active_order'];
   const shouldPulse = config.pulse;
   const hasMultipleOrders = activeOrderCount > 1;
 
-  // Pulse animation effect
+  // Start pulse animation
   useEffect(() => {
     if (shouldPulse) {
-      // Scale pulse animation
-      scale.value = withRepeat(
+      // Pulse scale animation
+      pulseAnim.value = withRepeat(
         withSequence(
-          withTiming(1.25, { duration: 700, easing: Easing.out(Easing.ease) }),
-          withTiming(1, { duration: 700, easing: Easing.in(Easing.ease) })
-        ),
-        -1, // infinite
-        true // reverse
-      );
-      
-      // Opacity pulse for glow effect
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: 700, easing: Easing.out(Easing.ease) }),
-          withTiming(0.5, { duration: 700, easing: Easing.in(Easing.ease) })
+          withTiming(1.3, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
-        true
+        false
+      );
+      
+      // Glow animation
+      glowAnim.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.3, { duration: 600, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
       );
     } else {
-      // Reset to static
-      cancelAnimation(scale);
-      cancelAnimation(opacity);
-      scale.value = withTiming(1, { duration: 200 });
-      opacity.value = withTiming(0.6, { duration: 200 });
+      pulseAnim.value = 1;
+      glowAnim.value = 0;
     }
+  }, [shouldPulse]);
 
-    return () => {
-      cancelAnimation(scale);
-      cancelAnimation(opacity);
-    };
-  }, [shouldPulse, scale, opacity]);
-
-  // Arrow animation for multiple orders
+  // Arrow pulse animation for multiple orders
   useEffect(() => {
     if (hasMultipleOrders) {
-      arrowOpacity.value = withRepeat(
+      arrowAnim.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 500 }),
           withTiming(0.3, { duration: 500 })
         ),
         -1,
-        true
+        false
       );
-    } else {
-      cancelAnimation(arrowOpacity);
-      arrowOpacity.value = 0;
     }
+  }, [hasMultipleOrders]);
 
-    return () => {
-      cancelAnimation(arrowOpacity);
+  const pulseStyle = useAnimatedStyle(() => {
+    if (!shouldPulse) {
+      return { transform: [{ scale: 1 }] };
+    }
+    return {
+      transform: [{ scale: pulseAnim.value }],
     };
-  }, [hasMultipleOrders, arrowOpacity]);
+  });
 
-  const animatedIndicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const glowStyle = useAnimatedStyle(() => {
+    if (!shouldPulse) {
+      return {
+        shadowOpacity: 0,
+        shadowRadius: 0,
+      };
+    }
+    return {
+      shadowOpacity: interpolate(glowAnim.value, [0, 1], [0.3, 0.9]),
+      shadowRadius: interpolate(glowAnim.value, [0, 1], [4, 12]),
+    };
+  });
 
-  const animatedArrowStyle = useAnimatedStyle(() => ({
-    opacity: arrowOpacity.value,
-    transform: [{ scale: arrowOpacity.value }],
-  }));
+  const arrowPulseStyle = useAnimatedStyle(() => {
+    return {
+      opacity: arrowAnim.value,
+      transform: [{ scale: arrowAnim.value }],
+    };
+  });
 
   return (
     <View style={styles.container}>
-      {/* Main Status Indicator with Pulse */}
+      {/* Main Status Indicator */}
       <Animated.View
         style={[
           styles.indicator,
@@ -120,43 +124,39 @@ export const OrderStatusIndicator = ({
             borderRadius: size / 2,
             backgroundColor: config.color,
             shadowColor: config.color,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: shouldPulse ? 0.8 : 0.3,
-            shadowRadius: shouldPulse ? 8 : 2,
-            elevation: shouldPulse ? 8 : 2,
           },
-          animatedIndicatorStyle,
+          pulseStyle,
+          glowStyle,
         ]}
       >
-        {/* Inner bright dot */}
+        {/* Inner dot for visual effect */}
         <View
           style={[
             styles.innerDot,
             {
-              width: size * 0.35,
-              height: size * 0.35,
-              borderRadius: size * 0.175,
+              width: size * 0.4,
+              height: size * 0.4,
+              borderRadius: size * 0.2,
             },
           ]}
         />
       </Animated.View>
 
-      {/* Multiple Orders Indicator */}
+      {/* Multiple Orders Indicator - White circle with pulsing arrow */}
       {hasMultipleOrders && (
         <Animated.View
           style={[
             styles.multiOrderIndicator,
             {
-              width: size * 0.6,
-              height: size * 0.6,
-              borderRadius: size * 0.3,
-              right: -size * 0.2,
-              top: -size * 0.2,
+              width: size * 0.65,
+              height: size * 0.65,
+              borderRadius: size * 0.325,
+              left: size * 0.5,
             },
-            animatedArrowStyle,
+            arrowPulseStyle,
           ]}
         >
-          <Ionicons name="arrow-up" size={size * 0.35} color={config.color} />
+          <Ionicons name="arrow-up" size={size * 0.4} color={config.color} />
         </Animated.View>
       )}
     </View>
@@ -168,15 +168,15 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 32,
-    minHeight: 32,
   },
   indicator: {
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
   },
   innerDot: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   multiOrderIndicator: {
     position: 'absolute',
@@ -184,11 +184,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
-    elevation: 3,
-    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+    borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
   },
 });
