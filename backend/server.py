@@ -2534,6 +2534,174 @@ async def seed_database():
     ]
     await db.categories.insert_many(categories)
 
+    # Seed product brands
+    product_brands = [
+        {"_id": "pb_denso", "name": "Denso", "name_ar": "دينسو", "logo": None, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "pb_bosch", "name": "Bosch", "name_ar": "بوش", "logo": None, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "pb_aisin", "name": "Aisin", "name_ar": "آيسن", "logo": None, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "pb_ngk", "name": "NGK", "name_ar": "إن جي كي", "logo": None, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+    ]
+    await db.product_brands.insert_many(product_brands)
+
+    # Seed car models
+    car_models = [
+        {"_id": "cm_corolla", "name": "Corolla", "name_ar": "كورولا", "car_brand_id": "cb_toyota", "year_from": 2015, "year_to": 2024, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "cm_camry", "name": "Camry", "name_ar": "كامري", "car_brand_id": "cb_toyota", "year_from": 2015, "year_to": 2024, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "cm_civic", "name": "Civic", "name_ar": "سيفيك", "car_brand_id": "cb_honda", "year_from": 2015, "year_to": 2024, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "cm_accord", "name": "Accord", "name_ar": "أكورد", "car_brand_id": "cb_honda", "year_from": 2015, "year_to": 2024, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+        {"_id": "cm_elantra", "name": "Elantra", "name_ar": "النترا", "car_brand_id": "cb_hyundai", "year_from": 2015, "year_to": 2024, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc), "deleted_at": None},
+    ]
+    await db.car_models.insert_many(car_models)
+
+    # Seed sample products
+    products = [
+        {
+            "_id": "prod_1",
+            "name": "Premium Oil Filter",
+            "name_ar": "فلتر زيت ممتاز",
+            "description": "High-quality oil filter for Toyota Corolla",
+            "description_ar": "فلتر زيت عالي الجودة لسيارة تويوتا كورولا",
+            "price": 85.00,
+            "stock_quantity": 50,
+            "sku": "OIL-FLT-001",
+            "category_id": "cat_engine",
+            "product_brand_id": "pb_denso",
+            "compatible_car_models": ["cm_corolla", "cm_camry"],
+            "image_url": "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_2",
+            "name": "Brake Pads Set",
+            "name_ar": "طقم تيل فرامل",
+            "description": "Ceramic brake pads for safe stopping",
+            "description_ar": "تيل فرامل سيراميك للتوقف الآمن",
+            "price": 250.00,
+            "stock_quantity": 30,
+            "sku": "BRK-PAD-001",
+            "category_id": "cat_brakes",
+            "product_brand_id": "pb_bosch",
+            "compatible_car_models": ["cm_corolla", "cm_civic", "cm_elantra"],
+            "image_url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_3",
+            "name": "Shock Absorber",
+            "name_ar": "ممتص صدمات",
+            "description": "Heavy-duty shock absorber for smooth ride",
+            "description_ar": "ممتص صدمات قوي لقيادة سلسة",
+            "price": 450.00,
+            "stock_quantity": 20,
+            "sku": "SUS-SHK-001",
+            "category_id": "cat_suspension",
+            "product_brand_id": "pb_aisin",
+            "compatible_car_models": ["cm_camry", "cm_accord"],
+            "image_url": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_4",
+            "name": "Spark Plugs (4 Pack)",
+            "name_ar": "بوجيهات (عدد 4)",
+            "description": "Iridium spark plugs for better performance",
+            "description_ar": "بوجيهات إيريديوم لأداء أفضل",
+            "price": 180.00,
+            "stock_quantity": 100,
+            "sku": "ENG-SPK-001",
+            "category_id": "cat_engine",
+            "product_brand_id": "pb_ngk",
+            "compatible_car_models": ["cm_corolla", "cm_civic", "cm_elantra"],
+            "image_url": "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_5",
+            "name": "Alternator",
+            "name_ar": "دينامو",
+            "description": "High-output alternator for electrical system",
+            "description_ar": "دينامو عالي الإنتاج للنظام الكهربائي",
+            "price": 850.00,
+            "stock_quantity": 15,
+            "sku": "ELC-ALT-001",
+            "category_id": "cat_electrical",
+            "product_brand_id": "pb_denso",
+            "compatible_car_models": ["cm_camry", "cm_accord"],
+            "image_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_6",
+            "name": "Air Filter",
+            "name_ar": "فلتر هواء",
+            "description": "High-flow air filter for better engine breathing",
+            "description_ar": "فلتر هواء عالي التدفق لتنفس أفضل للمحرك",
+            "price": 65.00,
+            "stock_quantity": 75,
+            "sku": "ENG-AIR-001",
+            "category_id": "cat_engine",
+            "product_brand_id": "pb_bosch",
+            "compatible_car_models": ["cm_corolla", "cm_civic"],
+            "image_url": "https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_7",
+            "name": "Headlight Bulb LED",
+            "name_ar": "لمبة فانوس LED",
+            "description": "Bright LED headlight bulbs",
+            "description_ar": "لمبات فانوس LED ساطعة",
+            "price": 120.00,
+            "stock_quantity": 60,
+            "sku": "ELC-LED-001",
+            "category_id": "cat_electrical",
+            "product_brand_id": "pb_bosch",
+            "compatible_car_models": ["cm_corolla", "cm_civic", "cm_elantra", "cm_camry"],
+            "image_url": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+        {
+            "_id": "prod_8",
+            "name": "Brake Disc Rotor",
+            "name_ar": "طارة فرامل",
+            "description": "Ventilated brake disc rotor",
+            "description_ar": "طارة فرامل مهواة",
+            "price": 320.00,
+            "stock_quantity": 25,
+            "sku": "BRK-DSC-001",
+            "category_id": "cat_brakes",
+            "product_brand_id": "pb_aisin",
+            "compatible_car_models": ["cm_camry", "cm_accord"],
+            "image_url": "https://images.unsplash.com/photo-1449130301044-6ecee2e1b47d?w=400",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "deleted_at": None
+        },
+    ]
+    await db.products.insert_many(products)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
