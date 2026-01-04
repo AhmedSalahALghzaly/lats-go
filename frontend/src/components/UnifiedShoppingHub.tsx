@@ -1244,61 +1244,96 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
                       </Text>
                     </View>
 
-                    {/* Admin Status Actions */}
+                    {/* Admin Status Actions with Loading Spinner */}
                     {canEditOrderStatus && order.status !== 'delivered' && order.status !== 'cancelled' && (
                       <View style={styles.orderActions}>
                         {order.status === 'pending' && (
                           <TouchableOpacity
                             style={[styles.statusActionBtn, { backgroundColor: '#3B82F6' }]}
                             onPress={() => updateOrderStatus(order.id, 'preparing')}
+                            disabled={updatingOrderId !== null}
                           >
-                            <Ionicons name="construct-outline" size={14} color="#FFF" />
-                            <Text style={styles.statusActionText}>
-                              {language === 'ar' ? 'تحضير' : 'Prepare'}
-                            </Text>
+                            {updatingOrderId === order.id + '_preparing' ? (
+                              <ActivityIndicator size="small" color="#FFF" />
+                            ) : (
+                              <>
+                                <Ionicons name="construct-outline" size={14} color="#FFF" />
+                                <Text style={styles.statusActionText}>
+                                  {language === 'ar' ? 'تحضير' : 'Prepare'}
+                                </Text>
+                              </>
+                            )}
                           </TouchableOpacity>
                         )}
                         {order.status === 'preparing' && (
                           <TouchableOpacity
                             style={[styles.statusActionBtn, { backgroundColor: '#EAB308' }]}
                             onPress={() => updateOrderStatus(order.id, 'shipped')}
+                            disabled={updatingOrderId !== null}
                           >
-                            <Ionicons name="airplane-outline" size={14} color="#FFF" />
-                            <Text style={styles.statusActionText}>
-                              {language === 'ar' ? 'شحن' : 'Ship'}
-                            </Text>
+                            {updatingOrderId === order.id + '_shipped' ? (
+                              <ActivityIndicator size="small" color="#FFF" />
+                            ) : (
+                              <>
+                                <Ionicons name="airplane-outline" size={14} color="#FFF" />
+                                <Text style={styles.statusActionText}>
+                                  {language === 'ar' ? 'شحن' : 'Ship'}
+                                </Text>
+                              </>
+                            )}
                           </TouchableOpacity>
                         )}
                         {order.status === 'shipped' && (
                           <TouchableOpacity
                             style={[styles.statusActionBtn, { backgroundColor: '#6B7280' }]}
                             onPress={() => updateOrderStatus(order.id, 'out_for_delivery')}
+                            disabled={updatingOrderId !== null}
                           >
-                            <Ionicons name="car-outline" size={14} color="#FFF" />
-                            <Text style={styles.statusActionText}>
-                              {language === 'ar' ? 'في الطريق' : 'Out'}
-                            </Text>
+                            {updatingOrderId === order.id + '_out_for_delivery' ? (
+                              <ActivityIndicator size="small" color="#FFF" />
+                            ) : (
+                              <>
+                                <Ionicons name="car-outline" size={14} color="#FFF" />
+                                <Text style={styles.statusActionText}>
+                                  {language === 'ar' ? 'في الطريق' : 'Out'}
+                                </Text>
+                              </>
+                            )}
                           </TouchableOpacity>
                         )}
                         {order.status === 'out_for_delivery' && (
                           <TouchableOpacity
                             style={[styles.statusActionBtn, { backgroundColor: '#10B981' }]}
                             onPress={() => updateOrderStatus(order.id, 'delivered')}
+                            disabled={updatingOrderId !== null}
                           >
-                            <Ionicons name="checkmark-circle" size={14} color="#FFF" />
-                            <Text style={styles.statusActionText}>
-                              {language === 'ar' ? 'تسليم' : 'Deliver'}
-                            </Text>
+                            {updatingOrderId === order.id + '_delivered' ? (
+                              <ActivityIndicator size="small" color="#FFF" />
+                            ) : (
+                              <>
+                                <Ionicons name="checkmark-circle" size={14} color="#FFF" />
+                                <Text style={styles.statusActionText}>
+                                  {language === 'ar' ? 'تسليم' : 'Deliver'}
+                                </Text>
+                              </>
+                            )}
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity
                           style={[styles.statusActionBtn, { backgroundColor: '#EF4444' }]}
                           onPress={() => updateOrderStatus(order.id, 'cancelled')}
+                          disabled={updatingOrderId !== null}
                         >
-                          <Ionicons name="close-circle" size={14} color="#FFF" />
-                          <Text style={styles.statusActionText}>
-                            {language === 'ar' ? 'إلغاء' : 'Cancel'}
-                          </Text>
+                          {updatingOrderId === order.id + '_cancelled' ? (
+                            <ActivityIndicator size="small" color="#FFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="close-circle" size={14} color="#FFF" />
+                              <Text style={styles.statusActionText}>
+                                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                              </Text>
+                            </>
+                          )}
                         </TouchableOpacity>
                       </View>
                     )}
