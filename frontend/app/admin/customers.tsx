@@ -1,26 +1,31 @@
 /**
  * Customers Admin - Using Unified Shopping Hub
  * Displays customer list with integrated profile view via UnifiedShoppingHub
+ * With Real-Time Status Indicators
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Animated, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { customersApi, ordersApi } from '../../src/services/api';
+import api from '../../src/services/api';
 import { Header } from '../../src/components/Header';
 import { UnifiedShoppingHub } from '../../src/components/UnifiedShoppingHub';
 import { NEON_NIGHT_THEME } from '../../src/store/appStore';
+import { OrderStatusIndicator } from '../../src/components/ui/OrderStatusIndicator';
 
 export default function CustomersAdmin() {
   const { colors } = useTheme();
   const { language, isRTL } = useTranslation();
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [pendingOrderCounts, setPendingOrderCounts] = useState<{ [key: string]: number }>({});
+  const [customerOrderStatus, setCustomerOrderStatus] = useState<{[key: string]: { status: string; activeCount: number }}>({});
   const [loading, setLoading] = useState(true);
 
   // Customer Profile State
@@ -42,52 +47,89 @@ export default function CustomersAdmin() {
     ).start();
   }, []);
 
-  const fetchCustomers = async () => {
+  // Handle customerId query param for direct navigation
+  useEffect(() => {
+    if (params.customerId && customers.length > 0) {
+      const customer = customers.find(c => c.user_id === params.customerId || c.id === params.customerId);
+      if (customer) {
+        openCustomerProfile(customer, 'profile');
+      }
+    }
+  }, [params.customerId, customers]);
+
+  const fetchCustomers = useCallback(async () => {
     try {
       const response = await customersApi.getAll();
       const customersList = response.data?.customers || [];
       setCustomers(customersList);
 
-      // Fetch pending order counts for each customer
+      // Fetch pending order counts and status for each customer
       const counts: { [key: string]: number } = {};
+      const statusMap: {[key: string]: { status: string; activeCount: number }} = {};
+      
       for (const customer of customersList) {
         try {
           const countRes = await ordersApi.getPendingCount(customer.user_id);
           counts[customer.user_id] = countRes.data?.count || 0;
+          
+          // Also fetch order status info
+          const ordersRes = await api.get(`/admin/customer/${customer.user_id}/orders`);
+          const orders = ordersRes.data?.orders || [];
+          
+          const activeStatuses = ['pending', 'confirmed', 'preparing', 'shipped', 'out_for_delivery'];
+          const activeOrders = orders.filter((o: any) => activeStatuses.includes(o.status));
+          
+          if (activeOrders.length > 0) {
+            activeOrders.sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+            statusMap[customer.user_id] = {
+              status: activeOrders[0].status,
+              activeCount: activeOrders.length,
+            };
+          } else {
+            const latestOrder = orders[0];
+            statusMap[customer.user_id] = {
+              status: latestOrder?.status || 'no_active_order',
+              activeCount: 0,
+            };
+          }
         } catch (e) {
           counts[customer.user_id] = 0;
+          statusMap[customer.user_id] = { status: 'no_active_order', activeCount: 0 };
         }
       }
       setPendingOrderCounts(counts);
+      setCustomerOrderStatus(statusMap);
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const openCustomerProfile = (customer: any, tab: 'profile' | 'favorites' | 'cart' | 'checkout' | 'orders' = 'favorites') => {
+  const openCustomerProfile = useCallback((customer: any, tab: 'profile' | 'favorites' | 'cart' | 'checkout' | 'orders' = 'favorites') => {
     setSelectedCustomer(customer);
     setInitialTab(tab);
     setShowProfile(true);
-  };
+  }, []);
 
-  const handleViewOrders = (customer: any) => {
+  const handleViewOrders = useCallback((customer: any) => {
     openCustomerProfile(customer, 'orders');
     // Reset pending count for this customer
     setPendingOrderCounts(prev => ({ ...prev, [customer.user_id]: 0 }));
-  };
+  }, [openCustomerProfile]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await customersApi.delete(id);
       fetchCustomers();
     } catch (error) {
       console.error('Error deleting customer:', error);
     }
-  };
+  }, [fetchCustomers]);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = useCallback((dateStr: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
@@ -95,7 +137,7 @@ export default function CustomersAdmin() {
       month: 'short',
       day: 'numeric',
     });
-  };
+  }, [language]);
 
   // Customer Profile Modal using UnifiedShoppingHub
   if (showProfile && selectedCustomer) {
