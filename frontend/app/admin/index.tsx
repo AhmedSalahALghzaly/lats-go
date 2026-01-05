@@ -138,12 +138,9 @@ export default function AdminPanel() {
   // Check access on mount
   useEffect(() => {
     const checkAccess = async () => {
-      // For development/preview: allow access without login
-      // In production, remove this block
       if (!user) {
-        setHasAccess(true);
-        await fetchMetrics();
         setLoading(false);
+        setHasAccess(false);
         return;
       }
 
