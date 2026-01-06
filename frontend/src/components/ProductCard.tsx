@@ -19,9 +19,10 @@ interface ProductCardProps {
     product_brand_id?: string;
   };
   onAddToCart?: (quantity: number) => void;
+  cardWidth?: number; // Optional prop to override default width
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, cardWidth }) => {
   const { colors } = useTheme();
   const { t, language, isRTL } = useTranslation();
   const router = useRouter();
