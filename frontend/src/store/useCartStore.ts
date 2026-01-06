@@ -122,7 +122,16 @@ export const useCartStore = create<CartState>()(
         const itemToRemove = cartItems.find((item) => item.productId === productId);
 
         if (itemToRemove?.bundleGroupId && voidBundle) {
-          get().voidBundleDiscount(itemToRemove.bundleGroupId);
+          // Get all items in this bundle group
+          const bundleItems = cartItems.filter(
+            (item) => item.bundleGroupId === itemToRemove.bundleGroupId
+          );
+          
+          // If removing this item leaves less than 2 items in the bundle,
+          // void the bundle discount for all remaining items
+          if (bundleItems.length <= 2) {
+            get().voidBundleDiscount(itemToRemove.bundleGroupId);
+          }
         }
 
         set({ cartItems: cartItems.filter((item) => item.productId !== productId) });
