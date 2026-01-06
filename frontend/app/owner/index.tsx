@@ -255,7 +255,7 @@ export default function OwnerDashboard() {
       }, 1500);
     } catch (error: any) {
       setPartnerError(error.response?.data?.detail || (language === 'ar' ? 'فشل في إضافة الشريك' : 'Failed to add partner'));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptic.error();
     } finally {
       setAddingPartner(false);
     }
