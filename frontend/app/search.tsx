@@ -369,32 +369,37 @@ export default function SearchScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <FlatList
-          data={products}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.listContent}
-          columnWrapperStyle={styles.row}
-          ListHeaderComponent={
-            <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
-              {t('searchResults')}: {products.length}
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <ProductCard
-              product={item}
-              onAddToCart={() => handleAddToCart(item)}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {t('noProducts')}
+        <View style={styles.flashListContainer}>
+          <FlashList
+            data={products}
+            keyExtractor={(item) => item.id}
+            numColumns={NUM_COLUMNS}
+            estimatedItemSize={250}
+            contentContainerStyle={styles.listContent}
+            ListHeaderComponent={
+              <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
+                {t('searchResults')}: {products.length}
               </Text>
-            </View>
-          }
-        />
+            }
+            renderItem={({ item }) => (
+              <View style={styles.cardWrapper}>
+                <ProductCard
+                  product={item}
+                  cardWidth={cardWidth}
+                  onAddToCart={() => handleAddToCart(item)}
+                />
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  {t('noProducts')}
+                </Text>
+              </View>
+            }
+          />
+        </View>
       )}
     </View>
   );
