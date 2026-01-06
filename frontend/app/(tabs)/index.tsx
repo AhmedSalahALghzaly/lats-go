@@ -26,7 +26,7 @@ import { ProductCard } from '../../src/components/ProductCard';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAppStore } from '../../src/store/appStore';
-import { categoriesApi, carBrandsApi, carModelsApi, productBrandsApi, productsApi, cartApi, favoritesApi, promotionApi } from '../../src/services/api';
+import { categoriesApi, carBrandsApi, carModelsApi, productBrandsApi, productsApi, cartApi, favoritesApi, promotionApi, partnerApi } from '../../src/services/api';
 import { Skeleton, ProductCardSkeleton, CategoryCardSkeleton } from '../../src/components/ui/Skeleton';
 import { syncService } from '../../src/services/syncService';
 import { LinearGradient } from 'expo-linear-gradient';
