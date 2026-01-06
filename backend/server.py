@@ -1121,9 +1121,12 @@ async def get_car_model(model_id: str):
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
     model_data = serialize_doc(model)
-    brand = await db.car_brands.find_one({"_id": model["brand_id"]})
-    model_data["brand"] = serialize_doc(brand)
-    products = await db.products.find({"car_model_ids": model_id, "deleted_at": None}).to_list(100)
+    # Check for both brand_id and car_brand_id for compatibility
+    brand_id = model.get("brand_id") or model.get("car_brand_id")
+    if brand_id:
+        brand = await db.car_brands.find_one({"_id": brand_id})
+        model_data["brand"] = serialize_doc(brand) if brand else None
+    products = await db.products.find({"compatible_car_models": model_id, "deleted_at": None}).to_list(100)
     model_data["compatible_products"] = [serialize_doc(p) for p in products]
     model_data["compatible_products_count"] = len(products)
     return model_data
