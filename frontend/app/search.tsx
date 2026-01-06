@@ -32,6 +32,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, addToLocalCart } = useAppStore();
+  const { width: screenWidth } = useWindowDimensions();
 
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,8 +42,23 @@ export default function SearchScreen() {
   const [productBrands, setProductBrands] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
 
-  // Calculate card width dynamically (max 15% increase from 160 = max 184)
-  const cardWidth = useMemo(() => calculateCardWidth(), []);
+  // Calculate responsive card width and number of columns based on screen width
+  const { cardWidth, numColumns } = useMemo(() => {
+    const availableWidth = screenWidth - HORIZONTAL_PADDING;
+    // Calculate how many cards can fit with max width
+    let cols = Math.floor(availableWidth / (MAX_CARD_WIDTH + CARD_MARGIN * 2));
+    cols = Math.max(cols, 2); // Minimum 2 columns
+    
+    // Calculate actual card width to fill available space evenly
+    const totalMargin = cols * CARD_MARGIN * 2;
+    let width = Math.floor((availableWidth - totalMargin) / cols);
+    
+    // Ensure width is within bounds
+    width = Math.min(width, MAX_CARD_WIDTH);
+    width = Math.max(width, MIN_CARD_WIDTH);
+    
+    return { cardWidth: width, numColumns: cols };
+  }, [screenWidth]);
 
   // Filters
   const [selectedCarBrand, setSelectedCarBrand] = useState<string | null>(params.car_brand_id as string || null);
