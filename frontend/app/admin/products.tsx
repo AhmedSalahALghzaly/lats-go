@@ -276,10 +276,26 @@ export default function ProductsAdmin() {
         </View>
 
         {/* Add New Form */}
-        <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.formTitle, { color: colors.text }]}>
-            {language === 'ar' ? 'إضافة منتج جديد' : 'Add New Product'}
-          </Text>
+        <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: isEditMode ? colors.primary : colors.border }]}>
+          <View style={styles.formTitleRow}>
+            <Text style={[styles.formTitle, { color: isEditMode ? colors.primary : colors.text }]}>
+              {isEditMode 
+                ? (language === 'ar' ? 'تعديل المنتج' : 'Edit Product')
+                : (language === 'ar' ? 'إضافة منتج جديد' : 'Add New Product')
+              }
+            </Text>
+            {isEditMode && (
+              <TouchableOpacity
+                style={[styles.cancelEditBtn, { backgroundColor: colors.error + '20' }]}
+                onPress={resetForm}
+              >
+                <Ionicons name="close" size={18} color={colors.error} />
+                <Text style={[styles.cancelEditText, { color: colors.error }]}>
+                  {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* Section 1: Basic Product Information */}
           <View style={[styles.formSection, { borderColor: colors.border }]}>
