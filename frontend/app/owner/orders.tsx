@@ -172,7 +172,7 @@ export default function OrdersScreen() {
                 styles.filterPill,
                 activeFilter === filter.id && { backgroundColor: filter.color },
               ]}
-              onPress={() => setActiveFilter(filter.id)}
+              onPress={() => handleFilterChange(filter.id)}
             >
               <Text style={[
                 styles.filterText,
