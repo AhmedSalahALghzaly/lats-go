@@ -456,6 +456,18 @@ frontend:
         agent: "testing"
         comment: "✅ Car Model GetById endpoint tested successfully. GET /api/car-models/cm_corolla returns complete model data with brand info populated. Model 'Corolla' has brand 'Toyota' and 5 compatible products. All required fields present (name, brand, compatible_products)."
 
+  - task: "Marketing Home Slider Endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Marketing Home Slider endpoint tested successfully. GET /api/marketing/home-slider returns combined list of promotions and bundle offers for display. Found 5 slider items: 2 promotions and 3 bundle offers. Each item has required fields (type, id, title, image, is_active) and proper structure for frontend consumption."
+
 metadata:
   created_by: "main_agent"
   version: "2.0"
