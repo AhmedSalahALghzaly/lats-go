@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   TextInput,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,19 +19,11 @@ import { useTranslation } from '../src/hooks/useTranslation';
 import { useAppStore } from '../src/store/appStore';
 import { productsApi, carBrandsApi, carModelsApi, productBrandsApi, categoriesApi, cartApi } from '../src/services/api';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Constants for responsive grid layout
 const HORIZONTAL_PADDING = 24; // Total horizontal padding (12 left + 12 right)
-const GAP_BETWEEN_CARDS = 12; // Gap between cards
-const NUM_COLUMNS = 2;
-
-// Calculate card width: max 15% increase from original 160 = max 184
-// Formula: (screenWidth - padding - gap) / 2
-const calculateCardWidth = () => {
-  const availableWidth = SCREEN_WIDTH - HORIZONTAL_PADDING - GAP_BETWEEN_CARDS;
-  const calculatedWidth = Math.floor(availableWidth / NUM_COLUMNS);
-  const maxAllowedWidth = 184; // 160 * 1.15 = 184 (15% max increase)
-  return Math.min(calculatedWidth, maxAllowedWidth);
-};
+const CARD_MARGIN = 6; // Margin on each side of the card
+const MAX_CARD_WIDTH = 184; // Maximum card width (15% increase from 160)
+const MIN_CARD_WIDTH = 150; // Minimum card width for readability
 
 export default function SearchScreen() {
   const params = useLocalSearchParams();
