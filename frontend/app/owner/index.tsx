@@ -243,7 +243,7 @@ export default function OwnerDashboard() {
     setPartnerError('');
 
     try {
-      await adminApi.create(partnerEmail.trim().toLowerCase());
+      await partnerApi.create(partnerEmail.trim().toLowerCase());
       
       setAddSuccess(true);
       haptic.success();
@@ -266,7 +266,7 @@ export default function OwnerDashboard() {
 
   const handleDeletePartner = async (partner: any) => {
     try {
-      await adminApi.delete(partner.id);
+      await partnerApi.delete(partner.id);
       haptic.delete();
       fetchPartners();
     } catch (error) {
