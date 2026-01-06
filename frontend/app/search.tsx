@@ -505,8 +505,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   cardWrapper: {
-    flex: 1,
     alignItems: 'center',
+    marginBottom: 12,
   },
   row: {
     justifyContent: 'flex-start',
