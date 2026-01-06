@@ -298,8 +298,8 @@ const styles = StyleSheet.create({
     fontSize: 14,  // 12 * 1.15 ≈ 14
     fontWeight: '700',
     textAlign: 'center',
-    marginTop: 2,
-    marginBottom: 6,
+    marginTop: 0,
+    marginBottom: 8,
     letterSpacing: 0.3,
   },
   textRTL: {
