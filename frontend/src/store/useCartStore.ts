@@ -20,6 +20,16 @@ export interface CartItemData {
   discountedPrice?: number;
 }
 
+// Bundle Offer interface for addBundleToCart
+export interface BundleOfferData {
+  id: string;
+  name: string;
+  name_ar?: string;
+  discount_percentage: number;
+  product_ids: string[];
+  products?: any[];
+}
+
 interface CartState {
   cartItems: CartItemData[];
 
