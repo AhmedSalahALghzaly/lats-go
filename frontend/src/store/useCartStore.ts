@@ -112,6 +112,54 @@ export const useCartStore = create<CartState>()(
         }
       },
 
+      /**
+       * Bug Fix #1: Add all products from a bundle offer to cart atomically
+       * This ensures bundle integrity - all products are added with the same bundleGroupId
+       * and appropriate discounts applied
+       */
+      addBundleToCart: async (bundleOffer, products) => {
+        const { cartItems } = get();
+        
+        // Generate a unique bundle group ID for this bundle instance
+        const bundleGroupId = `bundle_${bundleOffer.id}_${Date.now()}`;
+        
+        // Calculate discounted prices for each product
+        const bundleItems: CartItemData[] = products.map((product) => {
+          const originalPrice = product.price || 0;
+          const discountedPrice = originalPrice * (1 - bundleOffer.discount_percentage / 100);
+          
+          return {
+            productId: product.id,
+            quantity: 1,
+            product: product,
+            bundleGroupId: bundleGroupId,
+            bundleOfferId: bundleOffer.id,
+            bundleOfferName: bundleOffer.name,
+            bundleDiscount: bundleOffer.discount_percentage,
+            originalPrice: originalPrice,
+            discountedPrice: discountedPrice,
+          };
+        });
+        
+        // Add all bundle items to cart atomically
+        set({ cartItems: [...cartItems, ...bundleItems] });
+        
+        // Sync with backend - add each item with bundle info
+        try {
+          for (const item of bundleItems) {
+            await cartApi.add(item.productId, item.quantity, {
+              bundle_group_id: bundleGroupId,
+              bundle_offer_id: bundleOffer.id,
+              bundle_discount_percentage: bundleOffer.discount_percentage,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to sync bundle cart items to backend:', error);
+          // Note: We keep the local state even if backend sync fails
+          // This allows offline-first behavior
+        }
+      },
+
       updateCartItem: (productId, quantity) => {
         const { cartItems } = get();
         if (quantity <= 0) {
