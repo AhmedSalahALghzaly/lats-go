@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   logoImage: {
-    width: 70,
+    width: 59,
     height: 50,
     marginRight: -2,
   },
