@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
@@ -11,6 +11,7 @@ interface CategoryCardProps {
     name: string;
     name_ar: string;
     icon?: string;
+    image_data?: string;
     children?: any[];
   };
   size?: 'small' | 'medium' | 'large';
