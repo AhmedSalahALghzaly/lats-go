@@ -180,6 +180,7 @@ export default function OwnerDashboard() {
   // Fetch partners on mount and set up auto-refresh
   useEffect(() => {
     fetchPartners();
+    fetchAllDataForSearch(); // جلب جميع البيانات للبحث الشامل
     
     // Cleanup on unmount
     return () => {
@@ -187,7 +188,7 @@ export default function OwnerDashboard() {
         clearInterval(refreshIntervalRef.current);
       }
     };
-  }, [fetchPartners]);
+  }, [fetchPartners, fetchAllDataForSearch]);
 
   // Start/stop auto-refresh when partners modal visibility changes
   useEffect(() => {
