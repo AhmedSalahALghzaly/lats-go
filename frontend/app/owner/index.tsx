@@ -26,7 +26,7 @@ import { useRouter } from 'expo-router';
 import { useAppStore, useColorMood } from '../../src/store/appStore';
 import { SyncIndicator } from '../../src/components/ui/SyncIndicator';
 import { useWebSocket } from '../../src/services/websocketService';
-import { partnerApi, suppliersApi, distributorsApi, customersApi, adminsApi } from '../../src/services/api';
+import { partnerApi, supplierApi, distributorApi, customerApi, adminApi } from '../../src/services/api';
 import { haptic } from '../../src/services/hapticService';
 import { VoidDeleteGesture } from '../../src/components/ui/VoidDeleteGesture';
 import { ConfettiEffect } from '../../src/components/ui/ConfettiEffect';
