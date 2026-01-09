@@ -608,7 +608,9 @@ export default function HomeScreen() {
                   <Image
                     source={{ uri: banner.image }}
                     style={styles.bannerImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="disk"
+                    transition={200}
                   />
                 ) : (
                   <LinearGradient
