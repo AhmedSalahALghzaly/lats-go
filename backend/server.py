@@ -2674,6 +2674,9 @@ async def startup_db_client():
     db = client[DB_NAME]
     logger.info(f"Connected to MongoDB - Unified Cart System Backend v4.0")
     
+    # إنشاء Database Indexes لتحسين سرعة البحث
+    await create_database_indexes()
+    
     # Seed initial data if needed
     existing_brands = await db.car_brands.count_documents({})
     if existing_brands == 0:
