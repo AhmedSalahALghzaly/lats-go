@@ -331,6 +331,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* App Version Info */}
+        <AppVersionInfo showDetails={true} />
+
         {/* Logout Button */}
         <TouchableOpacity
           style={[styles.logoutButton, { borderColor: colors.error }]}
