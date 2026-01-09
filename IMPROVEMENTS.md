@@ -35,7 +35,7 @@
 - [ ] إنشاء **Constants** file للقيم الثابتة
 
 ### 6. تحسين Backend
-- [ ] إضافة **Database Indexes** للحقول المستخدمة في البحث
+- [x] إضافة **Database Indexes** للحقول المستخدمة في البحث ✅
 - [ ] تطبيق **Rate Limiting** لحماية الـ API
 - [ ] إضافة **Compression** للاستجابات الكبيرة
 
