@@ -331,6 +331,40 @@ export const useAppStore = create<AppState>()(
         });
       },
 
+      // التحقق من صلاحية الجلسة عند بدء التطبيق
+      validateSession: async () => {
+        const state = get();
+        if (!state.sessionToken) {
+          console.log('No session token to validate');
+          return false;
+        }
+
+        try {
+          console.log('Validating session token...');
+          const result = await authApi.validateToken();
+          
+          if (result.valid && result.user) {
+            console.log('Session is valid, updating user data');
+            // تحديث بيانات المستخدم
+            set({
+              user: result.user,
+              isAuthenticated: true,
+              userRole: result.user.role || 'user',
+            });
+            return true;
+          } else {
+            console.log('Session is invalid, logging out');
+            // الجلسة غير صالحة، تسجيل الخروج
+            get().logout();
+            return false;
+          }
+        } catch (error) {
+          console.error('Error validating session:', error);
+          // في حالة الخطأ، نبقي على الحالة الحالية
+          return false;
+        }
+      },
+
       // UI Actions
       setTheme: (theme) => set({ theme }),
       
