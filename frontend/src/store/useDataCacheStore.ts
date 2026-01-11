@@ -1,11 +1,38 @@
 /**
  * Data Cache Store - Handles cached data for offline-first
- * Split from monolithic appStore for better performance
- * v2.0 - Added Offline Action Queue for robust offline support
+ * v3.0 - Enhanced with Snapshot mechanism, Smart Cache Cleanup, Conflict Resolution
  */
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Web-safe storage wrapper
+const createWebSafeStorage = (): StateStorage => {
+  if (typeof window === 'undefined') {
+    return {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+  }
+  
+  if (Platform.OS === 'web') {
+    return {
+      getItem: (name) => {
+        try { return localStorage.getItem(name); } catch { return null; }
+      },
+      setItem: (name, value) => {
+        try { localStorage.setItem(name, value); } catch { }
+      },
+      removeItem: (name) => {
+        try { localStorage.removeItem(name); } catch { }
+      },
+    };
+  }
+  
+  return AsyncStorage;
+};
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -15,7 +42,9 @@ export type OfflineActionType =
   | 'cart_update' 
   | 'cart_clear' 
   | 'order_create' 
-  | 'favorite_toggle';
+  | 'favorite_toggle'
+  | 'product_update'
+  | 'generic';
 
 export interface OfflineAction {
   id: string;
@@ -28,6 +57,44 @@ export interface OfflineAction {
   maxRetries: number;
   status: 'pending' | 'processing' | 'failed';
   errorMessage?: string;
+  // Conflict resolution
+  resourceId?: string;
+  resourceType?: string;
+  localVersion?: number;
+}
+
+// Snapshot for rollback capability
+export interface DataSnapshot {
+  id: string;
+  timestamp: number;
+  description: string;
+  data: {
+    products?: any[];
+    categories?: any[];
+    orders?: any[];
+    carBrands?: any[];
+    carModels?: any[];
+    productBrands?: any[];
+  };
+}
+
+// Sync result for partial sync tracking
+export interface SyncResult {
+  resource: string;
+  success: boolean;
+  itemCount?: number;
+  errorMessage?: string;
+  timestamp: number;
+}
+
+// Resource versioning for conflict resolution
+export interface ResourceVersion {
+  resourceId: string;
+  resourceType: string;
+  localVersion: number;
+  serverVersion?: number;
+  lastModified: number;
+  hasConflict: boolean;
 }
 
 interface DataCacheState {
@@ -36,10 +103,18 @@ interface DataCacheState {
   lastSyncTime: number | null;
   isOnline: boolean;
   syncError: string | null;
+  lastSyncResults: SyncResult[];
 
   // Offline Action Queue
   offlineActionsQueue: OfflineAction[];
   isProcessingQueue: boolean;
+
+  // Snapshots for rollback
+  snapshots: DataSnapshot[];
+  maxSnapshots: number;
+
+  // Resource versioning
+  resourceVersions: ResourceVersion[];
 
   // Data cache for offline-first
   carBrands: any[];
@@ -60,6 +135,7 @@ interface DataCacheState {
   setSyncStatus: (status: SyncStatus) => void;
   setSyncError: (error: string | null) => void;
   setLastSyncTime: (time: number) => void;
+  setLastSyncResults: (results: SyncResult[]) => void;
 
   // Offline Queue Actions
   addToOfflineQueue: (action: Omit<OfflineAction, 'id' | 'timestamp' | 'retryCount' | 'status'>) => void;
@@ -68,6 +144,22 @@ interface DataCacheState {
   clearOfflineQueue: () => void;
   setProcessingQueue: (isProcessing: boolean) => void;
   getQueueLength: () => number;
+  
+  // Smart Cache Cleanup
+  purgeOldQueueItems: (maxAgeDays?: number, maxRetries?: number) => number;
+  cleanupAfterSync: () => void;
+
+  // Snapshot Actions
+  createSnapshot: (description: string) => string;
+  restoreSnapshot: (snapshotId: string) => boolean;
+  deleteSnapshot: (snapshotId: string) => void;
+  getSnapshots: () => DataSnapshot[];
+
+  // Conflict Resolution
+  trackResourceVersion: (resourceId: string, resourceType: string, version: number) => void;
+  checkConflict: (resourceId: string, resourceType: string, serverVersion: number) => boolean;
+  resolveConflict: (resourceId: string, resourceType: string, resolution: 'local' | 'server') => void;
+  getConflicts: () => ResourceVersion[];
 
   // Data Actions
   setCarBrands: (data: any[]) => void;
@@ -82,12 +174,26 @@ interface DataCacheState {
   setSubscribers: (data: any[]) => void;
   setCustomers: (data: any[]) => void;
   setOrders: (data: any[]) => void;
+
+  // Bulk data update with versioning
+  updateProductWithVersion: (productId: string, updates: any) => void;
+  updateOrderWithVersion: (orderId: string, updates: any) => void;
 }
 
 // Generate unique ID for actions
 const generateActionId = (): string => {
   return `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
+
+// Generate unique ID for snapshots
+const generateSnapshotId = (): string => {
+  return `snapshot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Constants
+const MAX_QUEUE_AGE_DAYS = 3;
+const MAX_RETRIES = 5;
+const MAX_SNAPSHOTS = 5;
 
 export const useDataCacheStore = create<DataCacheState>()(
   persist(
@@ -96,10 +202,18 @@ export const useDataCacheStore = create<DataCacheState>()(
       lastSyncTime: null,
       isOnline: true,
       syncError: null,
+      lastSyncResults: [],
       
       // Offline Queue
       offlineActionsQueue: [],
       isProcessingQueue: false,
+
+      // Snapshots
+      snapshots: [],
+      maxSnapshots: MAX_SNAPSHOTS,
+
+      // Resource versions
+      resourceVersions: [],
 
       // Data
       carBrands: [],
@@ -119,8 +233,10 @@ export const useDataCacheStore = create<DataCacheState>()(
       setSyncStatus: (status) => set({ syncStatus: status }),
       setSyncError: (error) => set({ syncError: error }),
       setLastSyncTime: (time) => set({ lastSyncTime: time }),
+      setLastSyncResults: (results) => set({ lastSyncResults: results }),
 
-      // Offline Queue Actions
+      // ==================== Offline Queue Actions ====================
+      
       addToOfflineQueue: (action) => set((state) => ({
         offlineActionsQueue: [
           ...state.offlineActionsQueue,
@@ -150,7 +266,225 @@ export const useDataCacheStore = create<DataCacheState>()(
 
       getQueueLength: () => get().offlineActionsQueue.length,
 
-      // Data Actions
+      // ==================== Smart Cache Cleanup ====================
+
+      /**
+       * Purge old queue items based on age and retry count
+       * Returns the number of items purged
+       */
+      purgeOldQueueItems: (maxAgeDays = MAX_QUEUE_AGE_DAYS, maxRetries = MAX_RETRIES) => {
+        const state = get();
+        const now = Date.now();
+        const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+        
+        const itemsToPurge = state.offlineActionsQueue.filter((action) => {
+          const age = now - action.timestamp;
+          const isTooOld = age > maxAgeMs;
+          const hasMaxRetries = action.retryCount >= maxRetries && action.status === 'failed';
+          return isTooOld || hasMaxRetries;
+        });
+
+        if (itemsToPurge.length > 0) {
+          console.log(`[DataCacheStore] Purging ${itemsToPurge.length} old/failed queue items`);
+          set({
+            offlineActionsQueue: state.offlineActionsQueue.filter(
+              (action) => !itemsToPurge.find((p) => p.id === action.id)
+            ),
+          });
+        }
+
+        return itemsToPurge.length;
+      },
+
+      /**
+       * Cleanup after successful sync
+       * Removes confirmation tokens and temporary flags
+       */
+      cleanupAfterSync: () => {
+        const state = get();
+        
+        // Remove successfully completed actions
+        const completedActions = state.offlineActionsQueue.filter(
+          (a) => a.status !== 'pending' && a.status !== 'processing'
+        );
+        
+        if (completedActions.length > 0) {
+          console.log(`[DataCacheStore] Cleaning up ${completedActions.length} completed actions`);
+          set({
+            offlineActionsQueue: state.offlineActionsQueue.filter((a) => 
+              a.status === 'pending' || a.status === 'processing'
+            ),
+          });
+        }
+
+        // Clear old resource versions (keep only those modified in last 24 hours)
+        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        set({
+          resourceVersions: state.resourceVersions.filter(
+            (rv) => rv.lastModified > oneDayAgo || rv.hasConflict
+          ),
+        });
+      },
+
+      // ==================== Snapshot Actions ====================
+
+      /**
+       * Create a snapshot of current data state before major sync
+       */
+      createSnapshot: (description) => {
+        const state = get();
+        const snapshotId = generateSnapshotId();
+        
+        const newSnapshot: DataSnapshot = {
+          id: snapshotId,
+          timestamp: Date.now(),
+          description,
+          data: {
+            products: [...state.products],
+            categories: [...state.categories],
+            orders: [...state.orders],
+            carBrands: [...state.carBrands],
+            carModels: [...state.carModels],
+            productBrands: [...state.productBrands],
+          },
+        };
+
+        // Keep only the most recent snapshots
+        const updatedSnapshots = [newSnapshot, ...state.snapshots].slice(0, state.maxSnapshots);
+        
+        set({ snapshots: updatedSnapshots });
+        console.log(`[DataCacheStore] Created snapshot: ${snapshotId} - ${description}`);
+        
+        return snapshotId;
+      },
+
+      /**
+       * Restore data from a snapshot (rollback)
+       */
+      restoreSnapshot: (snapshotId) => {
+        const state = get();
+        const snapshot = state.snapshots.find((s) => s.id === snapshotId);
+        
+        if (!snapshot) {
+          console.error(`[DataCacheStore] Snapshot not found: ${snapshotId}`);
+          return false;
+        }
+
+        console.log(`[DataCacheStore] Restoring snapshot: ${snapshotId}`);
+        
+        set({
+          products: snapshot.data.products || state.products,
+          categories: snapshot.data.categories || state.categories,
+          orders: snapshot.data.orders || state.orders,
+          carBrands: snapshot.data.carBrands || state.carBrands,
+          carModels: snapshot.data.carModels || state.carModels,
+          productBrands: snapshot.data.productBrands || state.productBrands,
+        });
+
+        return true;
+      },
+
+      deleteSnapshot: (snapshotId) => {
+        set((state) => ({
+          snapshots: state.snapshots.filter((s) => s.id !== snapshotId),
+        }));
+      },
+
+      getSnapshots: () => get().snapshots,
+
+      // ==================== Conflict Resolution ====================
+
+      /**
+       * Track local version of a resource for conflict detection
+       */
+      trackResourceVersion: (resourceId, resourceType, version) => {
+        set((state) => {
+          const existing = state.resourceVersions.find(
+            (rv) => rv.resourceId === resourceId && rv.resourceType === resourceType
+          );
+
+          if (existing) {
+            return {
+              resourceVersions: state.resourceVersions.map((rv) =>
+                rv.resourceId === resourceId && rv.resourceType === resourceType
+                  ? { ...rv, localVersion: version, lastModified: Date.now() }
+                  : rv
+              ),
+            };
+          }
+
+          return {
+            resourceVersions: [
+              ...state.resourceVersions,
+              {
+                resourceId,
+                resourceType,
+                localVersion: version,
+                lastModified: Date.now(),
+                hasConflict: false,
+              },
+            ],
+          };
+        });
+      },
+
+      /**
+       * Check if there's a conflict between local and server versions
+       */
+      checkConflict: (resourceId, resourceType, serverVersion) => {
+        const state = get();
+        const tracked = state.resourceVersions.find(
+          (rv) => rv.resourceId === resourceId && rv.resourceType === resourceType
+        );
+
+        if (!tracked) {
+          return false; // No local version, no conflict
+        }
+
+        const hasConflict = tracked.localVersion !== serverVersion;
+        
+        if (hasConflict) {
+          // Mark the conflict
+          set({
+            resourceVersions: state.resourceVersions.map((rv) =>
+              rv.resourceId === resourceId && rv.resourceType === resourceType
+                ? { ...rv, serverVersion, hasConflict: true }
+                : rv
+            ),
+          });
+          console.log(`[DataCacheStore] Conflict detected for ${resourceType}/${resourceId}`);
+        }
+
+        return hasConflict;
+      },
+
+      /**
+       * Resolve a conflict by choosing local or server version
+       */
+      resolveConflict: (resourceId, resourceType, resolution) => {
+        set((state) => ({
+          resourceVersions: state.resourceVersions.map((rv) =>
+            rv.resourceId === resourceId && rv.resourceType === resourceType
+              ? {
+                  ...rv,
+                  hasConflict: false,
+                  localVersion: resolution === 'server' ? rv.serverVersion || rv.localVersion : rv.localVersion,
+                }
+              : rv
+          ),
+        }));
+        console.log(`[DataCacheStore] Resolved conflict for ${resourceType}/${resourceId} using ${resolution} version`);
+      },
+
+      /**
+       * Get all resources with conflicts
+       */
+      getConflicts: () => {
+        return get().resourceVersions.filter((rv) => rv.hasConflict);
+      },
+
+      // ==================== Data Actions ====================
+      
       setCarBrands: (data) => set({ carBrands: data }),
       setCarModels: (data) => set({ carModels: data }),
       setProductBrands: (data) => set({ productBrands: data }),
@@ -163,14 +497,65 @@ export const useDataCacheStore = create<DataCacheState>()(
       setSubscribers: (data) => set({ subscribers: data }),
       setCustomers: (data) => set({ customers: data }),
       setOrders: (data) => set({ orders: data }),
+
+      // ==================== Versioned Updates ====================
+
+      /**
+       * Update a product with version tracking
+       */
+      updateProductWithVersion: (productId, updates) => {
+        const state = get();
+        const product = state.products.find((p) => p.id === productId);
+        
+        if (product) {
+          const newVersion = (product._version || 0) + 1;
+          
+          set({
+            products: state.products.map((p) =>
+              p.id === productId ? { ...p, ...updates, _version: newVersion, _localModified: Date.now() } : p
+            ),
+          });
+          
+          // Track the version
+          get().trackResourceVersion(productId, 'product', newVersion);
+        }
+      },
+
+      /**
+       * Update an order with version tracking
+       */
+      updateOrderWithVersion: (orderId, updates) => {
+        const state = get();
+        const order = state.orders.find((o) => o.id === orderId);
+        
+        if (order) {
+          const newVersion = (order._version || 0) + 1;
+          
+          set({
+            orders: state.orders.map((o) =>
+              o.id === orderId ? { ...o, ...updates, _version: newVersion, _localModified: Date.now() } : o
+            ),
+          });
+          
+          // Track the version
+          get().trackResourceVersion(orderId, 'order', newVersion);
+        }
+      },
     }),
     {
-      name: 'alghazaly-data-cache',
-      storage: createJSONStorage(() => AsyncStorage),
+      name: 'alghazaly-data-cache-v3',
+      storage: createJSONStorage(() => createWebSafeStorage()),
       partialize: (state) => ({
         // Essential sync data
         lastSyncTime: state.lastSyncTime,
+        lastSyncResults: state.lastSyncResults,
         offlineActionsQueue: state.offlineActionsQueue,
+        
+        // Snapshots (keep only the 2 most recent to save space)
+        snapshots: state.snapshots.slice(0, 2),
+        
+        // Resource versions (only conflicted ones)
+        resourceVersions: state.resourceVersions.filter((rv) => rv.hasConflict),
         
         // Essential cached data (limited size for performance)
         carBrands: state.carBrands.slice(0, 100),
@@ -199,5 +584,8 @@ export const useProductBrands = () => useDataCacheStore((state) => state.product
 export const useCategories = () => useDataCacheStore((state) => state.categories);
 export const useProducts = () => useDataCacheStore((state) => state.products);
 export const useOrders = () => useDataCacheStore((state) => state.orders);
+export const useSnapshots = () => useDataCacheStore((state) => state.snapshots);
+export const useConflicts = () => useDataCacheStore((state) => state.resourceVersions.filter((rv) => rv.hasConflict));
+export const useLastSyncResults = () => useDataCacheStore((state) => state.lastSyncResults);
 
 export default useDataCacheStore;
