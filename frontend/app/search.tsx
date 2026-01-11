@@ -131,10 +131,6 @@ export default function SearchScreen() {
     fetchFilters();
   }, []);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
   const handleAddToCart = async (product: any) => {
     if (!user) {
       router.push('/login');
@@ -148,6 +144,13 @@ export default function SearchScreen() {
       console.error('Error adding to cart:', error);
     }
   };
+
+  // Handle infinite scroll - load more when reaching end
+  const handleEndReached = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      fetchNextPage();
+    }
+  }, [isLoadingMore, hasMore, fetchNextPage]);
 
   const clearFilters = () => {
     setSelectedCarBrand(null);
@@ -163,6 +166,19 @@ export default function SearchScreen() {
   };
 
   const hasActiveFilters = selectedCarBrand || selectedCarModel || selectedProductBrand || selectedCategory || minPrice || maxPrice;
+
+  // Footer component for loading more indicator
+  const renderFooter = useCallback(() => {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={colors.primary} />
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+          {language === 'ar' ? 'جاري التحميل...' : 'Loading more...'}
+        </Text>
+      </View>
+    );
+  }, [isLoadingMore, colors, language]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
