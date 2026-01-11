@@ -35,8 +35,6 @@ export default function SearchScreen() {
   const { user, addToLocalCart } = useAppStore();
   const { width: screenWidth } = useWindowDimensions();
 
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [carBrands, setCarBrands] = useState<any[]>([]);
   const [carModels, setCarModels] = useState<any[]>([]);
   const [filteredCarModels, setFilteredCarModels] = useState<any[]>([]);
@@ -69,6 +67,31 @@ export default function SearchScreen() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Build filters object for infinite products hook
+  const filters = useMemo(() => ({
+    car_brand_id: selectedCarBrand && !selectedCarModel ? selectedCarBrand : undefined,
+    car_model_id: selectedCarModel || undefined,
+    product_brand_id: selectedProductBrand || undefined,
+    category_id: selectedCategory || undefined,
+    min_price: minPrice ? parseFloat(minPrice) : undefined,
+    max_price: maxPrice ? parseFloat(maxPrice) : undefined,
+  }), [selectedCarBrand, selectedCarModel, selectedProductBrand, selectedCategory, minPrice, maxPrice]);
+
+  // Use infinite products hook with cursor-based pagination
+  const {
+    products,
+    isLoading: loading,
+    isLoadingMore,
+    isRefreshing,
+    hasMore,
+    total,
+    fetchNextPage,
+    refresh,
+  } = useInfiniteProducts({
+    pageSize: 20,
+    filters,
+  });
 
   const fetchFilters = async () => {
     try {
@@ -103,26 +126,6 @@ export default function SearchScreen() {
       setFilteredCarModels(carModels);
     }
   }, [selectedCarBrand, carModels]);
-
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: any = {};
-      if (selectedCarBrand && !selectedCarModel) params.car_brand_id = selectedCarBrand;
-      if (selectedCarModel) params.car_model_id = selectedCarModel;
-      if (selectedProductBrand) params.product_brand_id = selectedProductBrand;
-      if (selectedCategory) params.category_id = selectedCategory;
-      if (minPrice) params.min_price = parseFloat(minPrice);
-      if (maxPrice) params.max_price = parseFloat(maxPrice);
-
-      const response = await productsApi.getAll(params);
-      setProducts(response.data.products || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedCarBrand, selectedCarModel, selectedProductBrand, selectedCategory, minPrice, maxPrice]);
 
   useEffect(() => {
     fetchFilters();
