@@ -1218,7 +1218,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
                 </Text>
               </View>
             ) : (
-              orders.map((order: any) => {
+              safeOrders.map((order: any) => {
                 const statusInfo = getStatusInfo(order.status);
                 return (
                   <View key={order.id} style={[styles.orderCard, { borderColor: colors.border }]}>
