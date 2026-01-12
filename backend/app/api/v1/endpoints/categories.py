@@ -58,6 +58,17 @@ async def create_category(category: CategoryCreate):
     await manager.broadcast({"type": "sync", "tables": ["categories"]})
     return serialize_doc(doc)
 
+@router.put("/{cat_id}")
+async def update_category(cat_id: str, category: CategoryCreate):
+    logger.info(f"Updating category: {cat_id}, image_data present: {bool(category.image_data)}")
+    await db.categories.update_one(
+        {"_id": cat_id},
+        {"$set": {**category.dict(), "updated_at": datetime.now(timezone.utc)}}
+    )
+    updated = await db.categories.find_one({"_id": cat_id})
+    await manager.broadcast({"type": "sync", "tables": ["categories"]})
+    return serialize_doc(updated)
+
 @router.delete("/{cat_id}")
 async def delete_category(cat_id: str):
     await db.categories.update_one(
