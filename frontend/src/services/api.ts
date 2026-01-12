@@ -93,6 +93,7 @@ export const carModelApi = {
 export const productBrandApi = {
   getAll: () => api.get('/product-brands'),
   create: (data: any) => api.post('/product-brands', data),
+  update: (id: string, data: any) => api.put(`/product-brands/${id}`, data),
   delete: (id: string) => api.delete(`/product-brands/${id}`),
 };
 
