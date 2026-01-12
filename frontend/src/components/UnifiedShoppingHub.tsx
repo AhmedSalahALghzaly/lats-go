@@ -756,7 +756,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
                 {language === 'ar' ? 'المنتجات المفضلة' : 'Favorite Products'}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: NEON_NIGHT_THEME.primary }]}>
-                <Text style={styles.countBadgeText}>{favorites.length}</Text>
+                <Text style={styles.countBadgeText}>{Array.isArray(favorites) ? favorites.length : 0}</Text>
               </View>
             </View>
 
