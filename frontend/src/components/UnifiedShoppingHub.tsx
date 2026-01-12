@@ -1182,7 +1182,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
             <TouchableOpacity
               style={[styles.submitOrderBtn, { backgroundColor: NEON_NIGHT_THEME.primary }]}
               onPress={handleSubmitOrder}
-              disabled={submittingOrder || cartItems.length === 0}
+              disabled={submittingOrder || safeCartItems.length === 0}
             >
               {submittingOrder ? (
                 <ActivityIndicator color="#FFF" />
