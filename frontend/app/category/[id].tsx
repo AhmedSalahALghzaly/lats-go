@@ -206,14 +206,24 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
+  scrollContainer: {
+    flex: 1,
+  },
   listContent: {
     padding: 12,
   },
   row: {
     justifyContent: 'flex-start',
   },
+  flashListContainer: {
+    flex: 1,
+    minHeight: 400,
+    paddingHorizontal: 12,
+  },
   subcategoriesSection: {
     marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingTop: 12,
   },
   sectionTitle: {
     fontSize: 18,
@@ -228,7 +238,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
   },
   productCount: {
     fontSize: 14,
