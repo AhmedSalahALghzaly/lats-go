@@ -2,15 +2,32 @@
  * Offline Database Service
  * Enhanced SQLite-based local database for persistent offline-first storage
  * Supports 3GB+ storage with intelligent sync management
+ * Note: SQLite is only available on native platforms (iOS/Android)
+ * On web, falls back to AsyncStorage
  */
-import * as SQLite from 'expo-sqlite';
-import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Type definitions for SQLite (conditional import)
+type SQLiteDatabase = any;
 
 // Database configuration
 const DB_NAME = 'alghazaly_offline.db';
 const STORAGE_LIMIT_GB = 3; // Soft limit in GB
 const STORAGE_LIMIT_BYTES = STORAGE_LIMIT_GB * 1024 * 1024 * 1024;
+
+// Storage keys for web fallback
+const STORAGE_KEYS = {
+  products: 'alghazaly_offline_products',
+  categories: 'alghazaly_offline_categories',
+  carBrands: 'alghazaly_offline_car_brands',
+  carModels: 'alghazaly_offline_car_models',
+  productBrands: 'alghazaly_offline_product_brands',
+  orders: 'alghazaly_offline_orders',
+  offlineQueue: 'alghazaly_offline_queue',
+  lastSyncTime: 'alghazaly_last_sync_time',
+  lastActivity: 'alghazaly_last_activity',
+};
 
 export interface SyncMetadata {
   lastSyncTimestamp: number;
