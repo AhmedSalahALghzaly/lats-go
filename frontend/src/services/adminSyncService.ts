@@ -307,6 +307,38 @@ class AdminSyncService {
     }
   }
 
+  async updateProductBrand(brandId: string, updates: any): Promise<OptimisticResult<any>> {
+    const cacheStore = useDataCacheStore.getState();
+    const appStore = useAppStore.getState();
+    
+    const snapshotId = cacheStore.createSnapshot('Pre-brand-update');
+    
+    const updateLocal = (brands: any[]) =>
+      brands.map((b) => (b.id === brandId ? { ...b, ...updates, _isOptimistic: true } : b));
+    
+    cacheStore.setProductBrands(updateLocal(cacheStore.productBrands));
+    appStore.setProductBrands(updateLocal(appStore.productBrands));
+    
+    try {
+      const response = await productBrandApi.update(brandId, updates);
+      const serverBrand = response.data;
+      
+      cacheStore.setProductBrands(
+        cacheStore.productBrands.map((b) => (b.id === brandId ? { ...b, ...serverBrand, _isOptimistic: false } : b))
+      );
+      appStore.setProductBrands(
+        appStore.productBrands.map((b) => (b.id === brandId ? { ...b, ...serverBrand, _isOptimistic: false } : b))
+      );
+      cacheStore.deleteSnapshot(snapshotId);
+      
+      console.log('[AdminSync] Product Brand updated successfully:', brandId);
+      return { success: true, data: serverBrand };
+    } catch (error: any) {
+      cacheStore.restoreSnapshot(snapshotId);
+      return { success: false, error: error.response?.data?.detail || error.message };
+    }
+  }
+
   async deleteProductBrand(brandId: string): Promise<OptimisticResult<void>> {
     const cacheStore = useDataCacheStore.getState();
     const appStore = useAppStore.getState();
