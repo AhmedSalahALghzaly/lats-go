@@ -623,18 +623,18 @@ export const InteractiveCarSelector: React.FC = () => {
           <FlatList
             data={filteredProducts}
             numColumns={2}
-            keyExtractor={useCallback((item: Product) => item.id, [])}
+            keyExtractor={(item: Product) => item.id}
             contentContainerStyle={styles.productsGrid}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={5}
             initialNumToRender={6}
-            getItemLayout={useCallback((_, index) => ({
+            getItemLayout={(_, index) => ({
               length: 180,
               offset: 180 * Math.floor(index / 2),
               index,
-            }), [])}
-            renderItem={useCallback(({ item, index }: { item: Product; index: number }) => (
+            })}
+            renderItem={({ item, index }: { item: Product; index: number }) => (
               <Animated.View
                 entering={FadeIn.delay(Math.min(index * 30, 300)).duration(200)}
                 layout={Layout.springify()}
@@ -671,7 +671,7 @@ export const InteractiveCarSelector: React.FC = () => {
                   </View>
                 </TouchableOpacity>
               </Animated.View>
-            ), [colors, mood, getName, handleProductPress, language])}
+            )}
           />
         )}
       </Animated.View>
