@@ -650,6 +650,9 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
+  flashListContainer: {
+    flex: 1,
+  },
   listContent: {
     padding: 16,
     paddingBottom: 32,
