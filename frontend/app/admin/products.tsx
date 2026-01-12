@@ -553,18 +553,43 @@ export default function ProductsAdmin() {
 
             {/* Category Selection */}
             <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                {language === 'ar' ? 'الفئة *' : 'Category *'}
-              </Text>
+              <View style={styles.labelWithSearch}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  {language === 'ar' ? 'الفئة *' : 'Category *'}
+                </Text>
+                <View style={[styles.miniSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Ionicons name="search" size={14} color={colors.textSecondary} />
+                  <TextInput
+                    style={[styles.miniSearchInput, { color: colors.text }]}
+                    value={categorySearchQuery}
+                    onChangeText={setCategorySearchQuery}
+                    placeholder={language === 'ar' ? 'بحث...' : 'Search...'}
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                  {categorySearchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setCategorySearchQuery('')}>
+                      <Ionicons name="close-circle" size={14} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
               <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>
                 {language === 'ar' ? 'اختر فئة المنتج' : 'Select product category'}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsContainer}>
-                {categories.map((cat) => (
+                {categories
+                  .filter((cat) => {
+                    if (!categorySearchQuery.trim()) return true;
+                    const query = categorySearchQuery.toLowerCase();
+                    const name = (cat.name || '').toLowerCase();
+                    const nameAr = (cat.name_ar || '').toLowerCase();
+                    return name.includes(query) || nameAr.includes(query);
+                  })
+                  .map((cat) => (
                   <TouchableOpacity
                     key={cat.id}
                     style={[
-                      styles.chip,
+                      styles.categoryChip,
                       { 
                         backgroundColor: selectedCategoryId === cat.id ? colors.primary : colors.surface, 
                         borderColor: selectedCategoryId === cat.id ? colors.primary : colors.border 
@@ -572,8 +597,22 @@ export default function ProductsAdmin() {
                     ]}
                     onPress={() => setSelectedCategoryId(cat.id)}
                   >
+                    {/* Category Image/Icon */}
+                    {(cat.image_data || cat.icon) ? (
+                      <Image 
+                        source={{ uri: cat.image_data || cat.icon }} 
+                        style={[
+                          styles.categoryChipImage,
+                          { borderColor: selectedCategoryId === cat.id ? 'rgba(255,255,255,0.3)' : colors.border }
+                        ]} 
+                      />
+                    ) : (
+                      <View style={[styles.categoryChipPlaceholder, { backgroundColor: colors.border }]}>
+                        <Ionicons name="grid" size={14} color={colors.textSecondary} />
+                      </View>
+                    )}
                     {selectedCategoryId === cat.id && (
-                      <Ionicons name="checkmark" size={14} color="#FFF" style={{ marginRight: 4 }} />
+                      <Ionicons name="checkmark" size={14} color="#FFF" style={{ marginLeft: 2 }} />
                     )}
                     <Text style={{ color: selectedCategoryId === cat.id ? '#FFF' : colors.text, fontSize: 13, fontWeight: '500' }}>
                       {language === 'ar' ? cat.name_ar : cat.name}
