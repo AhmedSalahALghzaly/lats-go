@@ -949,46 +949,49 @@ export default function MarketingSuiteScreen() {
               placeholder={language === 'ar' ? 'بحث...' : 'Search...'}
               placeholderTextColor={colors.textSecondary}
             />
-            <FlatList
-              data={filteredProducts}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const isSelected =
-                  selectorMode === 'promo'
-                    ? promoTargetProductId === item.id
-                    : bundleProductIds.includes(item.id);
-                return (
-                  <TouchableOpacity
-                    style={[
-                      styles.selectorItem,
-                      { backgroundColor: isSelected ? colors.primary + '20' : colors.surface, borderColor: colors.border },
-                    ]}
-                    onPress={() => {
-                      if (selectorMode === 'promo') {
-                        setPromoTargetProductId(item.id);
-                        setShowProductSelector(false);
-                      } else {
-                        if (isSelected) {
-                          setBundleProductIds((prev) => prev.filter((id) => id !== item.id));
+            <View style={styles.flashListSelectorContainer}>
+              <FlashList
+                data={filteredProducts}
+                keyExtractor={(item) => item.id}
+                estimatedItemSize={70}
+                renderItem={({ item }) => {
+                  const isSelected =
+                    selectorMode === 'promo'
+                      ? promoTargetProductId === item.id
+                      : bundleProductIds.includes(item.id);
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.selectorItem,
+                        { backgroundColor: isSelected ? colors.primary + '20' : colors.surface, borderColor: colors.border },
+                      ]}
+                      onPress={() => {
+                        if (selectorMode === 'promo') {
+                          setPromoTargetProductId(item.id);
+                          setShowProductSelector(false);
                         } else {
-                          setBundleProductIds((prev) => [...prev, item.id]);
+                          if (isSelected) {
+                            setBundleProductIds((prev) => prev.filter((id) => id !== item.id));
+                          } else {
+                            setBundleProductIds((prev) => [...prev, item.id]);
+                          }
                         }
-                      }
-                    }}
-                  >
-                    <View>
-                      <Text style={[styles.selectorItemTitle, { color: colors.text }]}>
-                        {language === 'ar' ? item.name_ar : item.name || item.name}
-                      </Text>
-                      <Text style={[styles.selectorItemSubtitle, { color: colors.textSecondary }]}>
-                        {item.sku} • {item.price?.toFixed(2)} EGP
-                      </Text>
-                    </View>
-                    {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
-                  </TouchableOpacity>
-                );
-              }}
-            />
+                      }}
+                    >
+                      <View>
+                        <Text style={[styles.selectorItemTitle, { color: colors.text }]}>
+                          {language === 'ar' ? item.name_ar : item.name || item.name}
+                        </Text>
+                        <Text style={[styles.selectorItemSubtitle, { color: colors.textSecondary }]}>
+                          {item.sku} • {item.price?.toFixed(2)} EGP
+                        </Text>
+                      </View>
+                      {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
             {selectorMode === 'bundle' && (
               <TouchableOpacity
                 style={[styles.doneButton, { backgroundColor: colors.primary }]}
