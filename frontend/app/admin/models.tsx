@@ -64,6 +64,12 @@ export default function ModelsAdmin() {
     }
   };
 
+  // Helper to get brand name
+  const getBrandName = (brandId: string) => {
+    const brand = brands.find(b => b.id === brandId);
+    return language === 'ar' ? brand?.name_ar : brand?.name;
+  };
+
   // Filter models based on search query
   const filteredModels = useMemo(() => {
     if (!searchQuery.trim()) return models;
@@ -71,10 +77,12 @@ export default function ModelsAdmin() {
     return models.filter((model) => {
       const name = (model.name || '').toLowerCase();
       const nameAr = (model.name_ar || '').toLowerCase();
-      const brandName = getBrandName(model.brand_id)?.toLowerCase() || '';
+      // Inline brand lookup to avoid function reference issues
+      const brand = brands.find(b => b.id === model.brand_id);
+      const brandName = (language === 'ar' ? brand?.name_ar : brand?.name)?.toLowerCase() || '';
       return name.includes(query) || nameAr.includes(query) || brandName.includes(query);
     });
-  }, [models, searchQuery, brands]);
+  }, [models, searchQuery, brands, language]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
     setToastMessage(message);
