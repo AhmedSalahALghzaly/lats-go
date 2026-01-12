@@ -218,11 +218,6 @@ export default function ModelsAdmin() {
     }
   };
 
-  const getBrandName = (brandId: string) => {
-    const brand = brands.find(b => b.id === brandId);
-    return language === 'ar' ? brand?.name_ar : brand?.name;
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
       <Header title={language === 'ar' ? 'الموديلات' : 'Models'} showBack showSearch={false} showCart={false} />
