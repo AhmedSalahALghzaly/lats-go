@@ -11,6 +11,7 @@ from ....core.database import db
 from ....core.security import get_current_user, get_user_role, serialize_doc
 from ....models.schemas import PromotionCreate
 from ....services.websocket import manager
+from ....services.notification import create_promotional_notification
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/promotions")
