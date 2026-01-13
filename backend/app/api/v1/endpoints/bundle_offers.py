@@ -57,6 +57,21 @@ async def create_bundle_offer(data: BundleOfferCreate, request: Request):
     }
     await db.bundle_offers.insert_one(doc)
     await manager.broadcast({"type": "sync", "tables": ["bundle_offers"]})
+    
+    # Send notification to all users about new bundle offer
+    if data.is_active:
+        discount_text = f"{int(data.discount_percentage)}% off" if data.discount_percentage else ""
+        discount_text_ar = f"خصم {int(data.discount_percentage)}%" if data.discount_percentage else ""
+        
+        await create_promotional_notification(
+            title=f"New Bundle: {data.name}",
+            title_ar=f"باقة جديدة: {data.name_ar or data.name}",
+            message=f"{data.description or 'Check out our new bundle offer!'} {discount_text}".strip(),
+            message_ar=f"{data.description_ar or 'اكتشف باقتنا الجديدة!'} {discount_text_ar}".strip(),
+            image_url=data.image_url,
+            bundle_id=doc["_id"]
+        )
+    
     return serialize_doc(doc)
 
 @router.put("/{offer_id}")
