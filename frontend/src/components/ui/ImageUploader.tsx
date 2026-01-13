@@ -385,7 +385,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               <View style={styles.imageContainer}>
                 <Image
                   source={{ uri: value as string }}
-                  style={[styles.image, { borderRadius }]}
+                  style={[styles.image, styles.transparentBackground, { borderRadius }]}
                   resizeMode="cover"
                 />
                 <TouchableOpacity
