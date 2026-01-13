@@ -262,48 +262,38 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           {displayName}
         </Text>
         
-        {/* Product Details Section */}
+        {/* Product Details Section - Reordered as per requirements */}
         {showDetails && (
           <View style={styles.detailsContainer}>
-            {/* Brand Name */}
-            {brandName ? (
-              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-                <Ionicons name="pricetag-outline" size={11} color={colors.primary} />
-                <Text style={[styles.detailText, styles.brandText, { color: colors.primary }]} numberOfLines={1}>
-                  {brandName}
-                </Text>
-              </View>
-            ) : null}
-            
-            {/* SKU */}
-            {product.sku ? (
-              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-                <Ionicons name="barcode-outline" size={11} color={colors.textSecondary} />
-                <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {product.sku}
-                </Text>
-              </View>
-            ) : null}
-            
-            {/* Country of Origin */}
-            {countryName ? (
-              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-                <Ionicons name="globe-outline" size={11} color={colors.textSecondary} />
-                <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {countryName}
-                </Text>
-              </View>
-            ) : null}
-            
-            {/* Compatible Car Model */}
+            {/* 1. Compatible Car Brands */}
             {carModelName ? (
               <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
-                <Ionicons name="car-sport-outline" size={11} color={colors.success || '#10B981'} />
-                <Text style={[styles.detailText, { color: colors.success || '#10B981' }]} numberOfLines={1}>
+                <Ionicons name="car-sport-outline" size={12} color={colors.success || '#10B981'} />
+                <Text style={[styles.detailText, styles.carModelText, { color: colors.success || '#10B981' }]} numberOfLines={1}>
                   {carModelName}
                   {product.compatible_car_models_count && product.compatible_car_models_count > 1 && (
                     ` +${product.compatible_car_models_count - 1}`
                   )}
+                </Text>
+              </View>
+            ) : null}
+            
+            {/* 2. Product Brand & Country */}
+            {brandName ? (
+              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                <Ionicons name="pricetag-outline" size={12} color={colors.primary} />
+                <Text style={[styles.detailText, styles.brandText, { color: colors.primary }]} numberOfLines={1}>
+                  {brandName}{countryName ? ` • ${countryName}` : ''}
+                </Text>
+              </View>
+            ) : null}
+            
+            {/* 3. Product SKU */}
+            {product.sku ? (
+              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                <Ionicons name="barcode-outline" size={12} color={colors.textSecondary} />
+                <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {product.sku}
                 </Text>
               </View>
             ) : null}
