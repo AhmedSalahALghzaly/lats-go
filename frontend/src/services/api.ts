@@ -4,8 +4,26 @@
  */
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-const API_BASE_URL = 'http://localhost:8001/api';
+// Get API URL from environment or use default
+const getApiBaseUrl = () => {
+  // For web preview, use relative path (Kubernetes ingress handles /api routing)
+  if (Platform.OS === 'web') {
+    return '/api';
+  }
+  
+  // For native apps, use the backend URL from environment
+  const backendUrl = Constants.expoConfig?.extra?.EXPO_BACKEND_URL;
+  if (backendUrl) {
+    return `${backendUrl}/api`;
+  }
+  
+  // Fallback for development
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
