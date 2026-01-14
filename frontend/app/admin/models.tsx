@@ -96,12 +96,16 @@ export default function ModelsAdmin() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [16, 9],
-        quality: 0.7,
+        quality: 1, // CRITICAL: Full quality to preserve PNG transparency
         base64: true,
       });
 
       if (!result.canceled && result.assets[0].base64) {
-        setModelImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+        // CRITICAL FIX: Detect actual image format from mimeType to preserve PNG alpha channel
+        const mimeType = result.assets[0].mimeType || 'image/jpeg';
+        const isPng = mimeType.includes('png') || result.assets[0].uri?.toLowerCase().endsWith('.png');
+        const format = isPng ? 'image/png' : 'image/jpeg';
+        setModelImage(`data:${format};base64,${result.assets[0].base64}`);
         setImageUrl('');
       }
     } catch (error) {
