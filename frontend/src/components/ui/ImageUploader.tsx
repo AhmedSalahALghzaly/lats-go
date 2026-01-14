@@ -146,12 +146,14 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         for (const asset of result.assets) {
           let imageUrl = '';
           
-          if (asset.uri) {
-            // Apply compression for images > 1MB, preserve PNG format
-            imageUrl = await processImageWithCompression(asset.uri, asset.mimeType || 'image/jpeg');
-          } else if (asset.base64) {
-            const mimeType = asset.mimeType || 'image/jpeg';
+          // CRITICAL FIX: Use original image directly without compression
+          // Detect mime type to preserve PNG transparency
+          if (asset.base64) {
+            const mimeType = asset.mimeType || 'image/png'; // Default to PNG to preserve transparency
             imageUrl = `data:${mimeType};base64,${asset.base64}`;
+            console.log('[ImageUploader] Using original image, mime:', mimeType);
+          } else if (asset.uri) {
+            imageUrl = asset.uri;
           }
           
           if (imageUrl) {
