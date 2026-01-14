@@ -1079,16 +1079,21 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   gridItem: {
-    width: 80,
-    height: 95,
+    // Dynamic width: 5 items per row with gaps
+    // SCREEN_WIDTH - padding(24) - gaps(32) = available / 5
+    width: (SCREEN_WIDTH - 24 - 32) / 5,
+    minWidth: 70,
+    maxWidth: 100,
+    height: 105,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    padding: 8,
+    padding: 6,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
