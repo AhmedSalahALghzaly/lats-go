@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { QueryProvider } from '../src/providers/QueryProvider';
 import { useAppStore, useHasHydrated, useUser } from '../src/store/appStore';
 import { adminApi } from '../src/services/api';
 import { syncService } from '../src/services/syncService';
