@@ -1461,6 +1461,65 @@ const styles = StyleSheet.create({
   chassisEmptyText: {
     fontSize: 14,
   },
+  // New Grid Card Styles for Chassis Search
+  chassisGridContainer: {
+    padding: 6,
+  },
+  chassisGridCardWrapper: {
+    width: (SCREEN_WIDTH - 36) / 3,
+    padding: 3,
+  },
+  chassisGridCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  chassisGridCardImage: {
+    width: '100%',
+    height: 70,
+    backgroundColor: 'transparent',
+  },
+  chassisGridCardPlaceholder: {
+    width: '100%',
+    height: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chassisGridCardInfo: {
+    padding: 8,
+    gap: 2,
+  },
+  chassisGridCardName: {
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
+  chassisGridCardBrand: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  chassisGridCardYear: {
+    fontSize: 8,
+    fontWeight: '500',
+  },
+  chassisGridTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+    marginTop: 2,
+  },
+  chassisGridTagText: {
+    fontSize: 7,
+    fontWeight: '600',
+  },
   gridContainer: {
     paddingBottom: 12,
   },
