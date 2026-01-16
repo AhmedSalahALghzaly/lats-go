@@ -913,22 +913,18 @@ export const InteractiveCarSelector: React.FC = () => {
               entering={FadeIn.duration(300)} 
               exiting={FadeOut.duration(200)}
             >
-              <View style={[styles.dualHintRow, isRTL && styles.dualHintRowRTL]}>
-                <TouchableOpacity style={styles.hintTouchable} onPress={isRTL ? handleChassisAnchorPress : handleCarAnchorPress}>
+              <View style={styles.dualHintRow}>
+                {/* Left text - always "رقم الشاسيه" in Arabic */}
+                <TouchableOpacity style={styles.hintTouchable} onPress={handleChassisAnchorPress}>
                   <Text style={[styles.hintText, { color: colors.text }]}>
-                    {isRTL 
-                      ? (language === 'ar' ? 'رقم الشاسيه' : 'Chassis No.')
-                      : (language === 'ar' ? 'اختر سيارتك' : 'Choose Car')
-                    }
+                    {language === 'ar' ? 'رقم الشاسيه' : 'Chassis No.'}
                   </Text>
                 </TouchableOpacity>
                 <View style={[styles.hintDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity style={styles.hintTouchable} onPress={isRTL ? handleCarAnchorPress : handleChassisAnchorPress}>
+                {/* Right text - always "اختر سيارتك" in Arabic */}
+                <TouchableOpacity style={styles.hintTouchable} onPress={handleCarAnchorPress}>
                   <Text style={[styles.hintText, { color: colors.text }]}>
-                    {isRTL 
-                      ? (language === 'ar' ? 'اختر سيارتك' : 'Choose Car')
-                      : (language === 'ar' ? 'رقم الشاسيه' : 'Chassis No.')
-                    }
+                    {language === 'ar' ? 'اختر سيارتك' : 'Choose Car'}
                   </Text>
                 </TouchableOpacity>
               </View>
