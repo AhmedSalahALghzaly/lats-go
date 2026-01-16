@@ -605,7 +605,7 @@ export const InteractiveCarSelector: React.FC = () => {
   }));
 
   const containerHeight = useAnimatedStyle(() => ({
-    height: interpolate(expandAnim.value, [0, 1], [70, SCREEN_HEIGHT * 0.30], Extrapolation.CLAMP),
+    height: interpolate(expandAnim.value, [0, 1], [70, SCREEN_HEIGHT * 0.35], Extrapolation.CLAMP),
   }));
 
   const glassStyle = useAnimatedStyle(() => ({
