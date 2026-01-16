@@ -876,7 +876,7 @@ export const InteractiveCarSelector: React.FC = () => {
 
         {/* Dual Anchor Button Row - Chassis on LEFT, Car on RIGHT */}
         <View style={styles.anchorRow}>
-          {/* LEFT Button: Chassis Selector - Electric Blue */}
+          {/* LEFT Button: Chassis Selector - Modern VIN Icon */}
           <AnimatedTouchable
             style={[
               styles.anchorButton,
@@ -896,8 +896,8 @@ export const InteractiveCarSelector: React.FC = () => {
               {selectorState === 'chassis_search' ? (
                 <Ionicons name="close" size={26} color="#FFF" />
               ) : (
-                <Ionicons
-                  name="search"
+                <MaterialCommunityIcons
+                  name="card-text-outline"
                   size={24}
                   color={mood?.primary || colors.primary}
                 />
