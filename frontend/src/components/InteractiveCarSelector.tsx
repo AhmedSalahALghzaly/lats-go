@@ -778,31 +778,31 @@ export const InteractiveCarSelector: React.FC = () => {
             </View>
           )}
           
-          {/* Card Info */}
+          {/* Card Info - Centered */}
           <View style={styles.chassisGridCardInfo}>
-            {/* Model Name */}
-            <Text style={[styles.chassisGridCardName, { color: colors.text }]} numberOfLines={1}>
+            {/* 1. Model Name */}
+            <Text style={[styles.chassisGridCardName, { color: colors.text, textAlign: 'center' }]} numberOfLines={1}>
               {getName(model)}
             </Text>
             
-            {/* Brand Name */}
-            {brand && (
-              <Text style={[styles.chassisGridCardBrand, { color: mood?.primary || colors.primary }]} numberOfLines={1}>
-                {getName(brand)}
-              </Text>
-            )}
-            
-            {/* Year */}
+            {/* 2. Year */}
             {model.year_start && (
-              <Text style={[styles.chassisGridCardYear, { color: colors.textSecondary }]}>
+              <Text style={[styles.chassisGridCardYear, { color: colors.textSecondary, textAlign: 'center' }]}>
                 {model.year_start}{model.year_end ? ` - ${model.year_end}` : '+'}
               </Text>
             )}
             
-            {/* Chassis Number Tag */}
+            {/* 3. Brand Name */}
+            {brand && (
+              <Text style={[styles.chassisGridCardBrand, { color: mood?.primary || colors.primary, textAlign: 'center' }]} numberOfLines={1}>
+                {getName(brand)}
+              </Text>
+            )}
+            
+            {/* 4. Chassis Number Tag */}
             {model.chassis_number && (
               <View style={[styles.chassisGridTag, { backgroundColor: mood?.primary + '20' }]}>
-                <Ionicons name="key-outline" size={10} color={mood?.primary || colors.primary} />
+                <Ionicons name="key-outline" size={8} color={mood?.primary || colors.primary} />
                 <Text style={[styles.chassisGridTagText, { color: mood?.primary || colors.primary }]} numberOfLines={1}>
                   {model.chassis_number}
                 </Text>
