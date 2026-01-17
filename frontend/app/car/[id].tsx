@@ -539,4 +539,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
   },
+  // Distributor Button Styles
+  distributorButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  distributorGradient: {
+    borderRadius: 16,
+  },
+  distributorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  distributorIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  distributorTextContainer: {
+    flex: 1,
+  },
+  distributorLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  distributorName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+    marginTop: 2,
+  },
 });
