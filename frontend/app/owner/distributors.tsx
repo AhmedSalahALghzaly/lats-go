@@ -394,7 +394,7 @@ export default function DistributorsScreen() {
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{isRTL ? 'الموزعين' : 'Distributors'}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setViewMode('add'); }}>
+          <TouchableOpacity style={styles.addButton} onPress={() => router.push('/owner/add-entity-form?entityType=distributor')}>
             <Ionicons name="add" size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
