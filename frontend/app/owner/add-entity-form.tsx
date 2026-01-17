@@ -136,6 +136,84 @@ export default function AddEntityFormScreen() {
     }));
   };
 
+  // Image picker functions
+  const pickProfileImage = async () => {
+    try {
+      // Request permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          isRTL ? 'الإذن مطلوب' : 'Permission Required',
+          isRTL ? 'نحتاج إذن الوصول إلى الصور' : 'We need permission to access your photos'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const base64Image = asset.base64 
+          ? `data:image/jpeg;base64,${asset.base64}` 
+          : asset.uri;
+        setFormData(prev => ({ ...prev, profile_image: base64Image }));
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (err) {
+      console.error('Error picking image:', err);
+      setError(isRTL ? 'فشل في اختيار الصورة' : 'Failed to pick image');
+    }
+  };
+
+  const addSliderImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          isRTL ? 'الإذن مطلوب' : 'Permission Required',
+          isRTL ? 'نحتاج إذن الوصول إلى الصور' : 'We need permission to access your photos'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const base64Image = asset.base64 
+          ? `data:image/jpeg;base64,${asset.base64}` 
+          : asset.uri;
+        setFormData(prev => ({ 
+          ...prev, 
+          slider_images: [...prev.slider_images, base64Image] 
+        }));
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (err) {
+      console.error('Error picking image:', err);
+      setError(isRTL ? 'فشل في اختيار الصورة' : 'Failed to pick image');
+    }
+  };
+
+  const removeSliderImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      slider_images: prev.slider_images.filter((_, i) => i !== index),
+    }));
+  };
+
   const toggleBrandLink = (brandId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFormData(prev => ({
