@@ -34,9 +34,10 @@ export default function SubscriptionsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const language = useAppStore((state) => state.language);
-  const subscribers = useAppStore((state) => state.subscribers);
+  const subscribers = useAppStore((state) => state.subscribers) || [];
   const setSubscribers = useAppStore((state) => state.setSubscribers);
-  const customers = useAppStore((state) => state.customers) || [];
+  const rawCustomers = useAppStore((state) => state.customers);
+  const customers = Array.isArray(rawCustomers) ? rawCustomers : [];
   const isRTL = language === 'ar';
 
   const [activeTab, setActiveTab] = useState<TabType>('subscribers');
