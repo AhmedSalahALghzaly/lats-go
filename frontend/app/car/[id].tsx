@@ -116,33 +116,36 @@ export default function CarModelDetailScreen() {
         {/* Distributor Contact Button - Only visible if distributor is linked */}
         {carModel.distributor && (
           <TouchableOpacity
-            style={[styles.distributorButton, { backgroundColor: colors.primary }]}
+            style={[styles.distributorButton, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => router.push(`/owner/distributors?viewMode=profile&id=${carModel.distributor.id}`)}
             activeOpacity={0.85}
           >
-            <LinearGradient
-              colors={['#DC2626', '#EF4444', '#F87171']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.distributorGradient}
-            >
-              <View style={styles.distributorContent}>
-                <View style={styles.distributorIconContainer}>
-                  <Ionicons name="business" size={22} color="#FFF" />
-                </View>
-                <View style={styles.distributorTextContainer}>
-                  <Text style={styles.distributorLabel}>
-                    {language === 'ar' ? 'موزع هذه السيارة' : 'Car Distributor'}
-                  </Text>
-                  <Text style={styles.distributorName}>
-                    {language === 'ar' && carModel.distributor.name_ar 
-                      ? carModel.distributor.name_ar 
-                      : carModel.distributor.name}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
+            <View style={styles.distributorContent}>
+              <View style={[styles.distributorImageContainer, { backgroundColor: colors.surface }]}>
+                {carModel.distributor.profile_image ? (
+                  <Image
+                    source={{ uri: carModel.distributor.profile_image }}
+                    style={styles.distributorProfileImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name="person-circle" size={44} color={colors.error} />
+                )}
               </View>
-            </LinearGradient>
+              <View style={styles.distributorTextContainer}>
+                <Text style={[styles.distributorLabel, { color: colors.textSecondary }]}>
+                  {language === 'ar' ? 'موزع هذه السيارة' : 'Car Distributor'}
+                </Text>
+                <Text style={[styles.distributorName, { color: colors.text }]}>
+                  {language === 'ar' && carModel.distributor.name_ar 
+                    ? carModel.distributor.name_ar 
+                    : carModel.distributor.name}
+                </Text>
+              </View>
+              <View style={[styles.distributorArrowContainer, { backgroundColor: colors.error + '20' }]}>
+                <Ionicons name="chevron-forward" size={18} color={colors.error} />
+              </View>
+            </View>
           </TouchableOpacity>
         )}
 
