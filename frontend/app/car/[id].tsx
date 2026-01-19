@@ -32,9 +32,13 @@ export default function CarModelDetailScreen() {
   const insets = useSafeAreaInsets();
   const { user, addToLocalCart } = useAppStore();
   const subscriptionStatus = useAppStore((state) => state.subscriptionStatus);
+  const userRole = useAppStore((state) => state.userRole);
 
+  // Check if user can download catalog (subscriber, owner, or partner)
+  const canDownloadCatalog = subscriptionStatus === 'subscriber' || userRole === 'owner' || userRole === 'partner';
+  
   // Check if user should see subscribe button (not a subscriber and no pending request)
-  const showSubscribeButton = subscriptionStatus === 'none';
+  const showSubscribeButton = subscriptionStatus === 'none' && userRole !== 'owner' && userRole !== 'partner';
 
   const [carModel, setCarModel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
