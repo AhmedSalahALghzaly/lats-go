@@ -325,6 +325,9 @@ const styles = StyleSheet.create({
   subscriberIconButton: {
     opacity: 0.9,
   },
+  pendingIconButton: {
+    opacity: 0.85,
+  },
   goldenBadge: {
     position: 'absolute',
     top: 2,
@@ -333,6 +336,17 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
