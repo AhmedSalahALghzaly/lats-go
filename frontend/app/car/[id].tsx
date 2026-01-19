@@ -284,14 +284,14 @@ export default function CarModelDetailScreen() {
             style={[
               styles.catalogBadge, 
               { backgroundColor: '#FFD70020' },
-              (!subscriptionStatus || subscriptionStatus === 'none') && styles.catalogBadgeDisabled
+              !canDownloadCatalog && styles.catalogBadgeDisabled
             ]}
             onPress={() => {
-              if (subscriptionStatus === 'subscriber') {
-                // Download/Open PDF for subscribers
+              if (canDownloadCatalog) {
+                // Download/Open PDF for subscribers, owner, partner
                 handleDownloadCatalog();
               } else {
-                // Not a subscriber - navigate to subscription
+                // Not authorized - navigate to subscription
                 router.push('/subscription-request');
               }
             }}
@@ -309,7 +309,7 @@ export default function CarModelDetailScreen() {
                 : (language === 'ar' ? 'كتالوج الموديل' : 'Model Catalog')
               }
             </Text>
-            {subscriptionStatus === 'subscriber' ? (
+            {canDownloadCatalog ? (
               carModel.catalog_pdf ? (
                 <Ionicons name="download-outline" size={14} color="#FFD700" />
               ) : (
