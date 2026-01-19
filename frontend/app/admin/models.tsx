@@ -117,6 +117,26 @@ export default function ModelsAdmin() {
     }
   };
 
+  const pickCatalogPdf = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const file = result.assets[0];
+        setCatalogPdfName(file.name || 'catalog.pdf');
+        // For now, store the URI - in production would upload to cloud storage
+        setCatalogPdf(file.uri);
+        showToast(language === 'ar' ? 'تم اختيار الكتالوج بنجاح' : 'Catalog selected successfully', 'success');
+      }
+    } catch (error) {
+      console.error('Error picking PDF:', error);
+      showToast(language === 'ar' ? 'فشل اختيار الملف' : 'Failed to select file', 'error');
+    }
+  };
+
   const resetForm = () => {
     setName('');
     setNameAr('');
@@ -126,6 +146,8 @@ export default function ModelsAdmin() {
     setChassisNumber('');
     setModelImage(null);
     setImageUrl('');
+    setCatalogPdf(null);
+    setCatalogPdfName('');
     setIsEditMode(false);
     setEditingModel(null);
     setError('');
@@ -141,6 +163,8 @@ export default function ModelsAdmin() {
     setChassisNumber(model.chassis_number || '');
     setModelImage(model.image_url || null);
     setImageUrl('');
+    setCatalogPdf(model.catalog_pdf || null);
+    setCatalogPdfName(model.catalog_pdf ? 'catalog.pdf' : '');
     setEditingModel(model);
     setIsEditMode(true);
     setError('');
