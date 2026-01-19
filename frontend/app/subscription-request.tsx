@@ -147,18 +147,32 @@ export default function SubscriptionRequestScreen() {
       await subscriptionRequestApi.create(formData);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
+      // Update subscription status to pending
+      useAppStore.getState().setSubscriptionStatus('pending');
+      
       // Show success modal with animation
       setShowSuccess(true);
       successScale.value = withSpring(1, { damping: 12, stiffness: 100 });
       checkmarkProgress.value = withDelay(200, withSpring(1, { damping: 15 }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Subscription request failed:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setErrors({
-        submit: isRTL
-          ? 'فشل إرسال الطلب. يرجى المحاولة مرة أخرى.'
-          : 'Failed to submit request. Please try again.',
-      });
+      
+      // Check for duplicate request error
+      const errorMessage = error.response?.data?.detail || '';
+      if (errorMessage.includes('already have a pending') || errorMessage.includes('already a subscriber')) {
+        setErrors({
+          submit: isRTL
+            ? 'لديك طلب اشتراك معلق بالفعل أو أنت مشترك حالياً.'
+            : 'You already have a pending request or are already a subscriber.',
+        });
+      } else {
+        setErrors({
+          submit: isRTL
+            ? 'فشل إرسال الطلب. يرجى المحاولة مرة أخرى.'
+            : 'Failed to submit request. Please try again.',
+        });
+      }
     } finally {
       setSubmitting(false);
     }
