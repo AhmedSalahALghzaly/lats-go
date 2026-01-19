@@ -650,4 +650,49 @@ const styles = StyleSheet.create({
   actionButtons: { flexDirection: 'column', gap: 8 },
   editButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   deleteButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  // Catalog PDF Upload Styles
+  catalogUploadButton: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  catalogUploadContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  catalogIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFD70020',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  catalogTextContainer: {
+    flex: 1,
+  },
+  catalogUploadText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFD700',
+  },
+  catalogHelperText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  catalogFileName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  catalogSelectedText: {
+    fontSize: 12,
+    color: '#10B981',
+    marginTop: 2,
+  },
+  catalogRemoveButton: {
+    padding: 4,
+  },
 });
