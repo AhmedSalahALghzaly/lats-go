@@ -72,6 +72,37 @@ async def get_subscription_requests(request: Request):
 
 @router.post("/subscription-requests")
 async def create_subscription_request(data: SubscriptionRequestCreate):
+    # Check for existing pending or approved request with same email or phone
+    existing_request = await db.subscription_requests.find_one({
+        "$or": [
+            {"email": data.email},
+            {"phone": data.phone}
+        ],
+        "status": {"$in": ["pending", "approved"]},
+        "deleted_at": None
+    })
+    
+    if existing_request:
+        raise HTTPException(
+            status_code=400, 
+            detail="You already have a pending or approved subscription request"
+        )
+    
+    # Check if already a subscriber
+    existing_subscriber = await db.subscribers.find_one({
+        "$or": [
+            {"email": data.email},
+            {"phone": data.phone}
+        ],
+        "deleted_at": None
+    })
+    
+    if existing_subscriber:
+        raise HTTPException(
+            status_code=400,
+            detail="You are already a subscriber"
+        )
+    
     request_doc = {
         "_id": str(uuid.uuid4()),
         **data.dict(),
@@ -93,6 +124,65 @@ async def create_subscription_request(data: SubscriptionRequestCreate):
     
     await manager.broadcast({"type": "sync", "tables": ["subscription_requests"]})
     return serialize_doc(request_doc)
+
+@router.get("/subscription-status")
+async def get_subscription_status(email: str = None, phone: str = None):
+    """Check subscription status for a user by email or phone"""
+    if not email and not phone:
+        return {"status": "none", "is_subscriber": False, "has_pending": False}
+    
+    query_conditions = []
+    if email:
+        query_conditions.append({"email": email})
+    if phone:
+        query_conditions.append({"phone": phone})
+    
+    # Check if already a subscriber
+    subscriber = await db.subscribers.find_one({
+        "$or": query_conditions,
+        "deleted_at": None
+    })
+    
+    if subscriber:
+        return {
+            "status": "subscriber",
+            "is_subscriber": True,
+            "has_pending": False,
+            "subscriber_id": str(subscriber["_id"])
+        }
+    
+    # Check for pending request
+    pending_request = await db.subscription_requests.find_one({
+        "$or": query_conditions,
+        "status": "pending",
+        "deleted_at": None
+    })
+    
+    if pending_request:
+        return {
+            "status": "pending",
+            "is_subscriber": False,
+            "has_pending": True,
+            "request_id": str(pending_request["_id"])
+        }
+    
+    # Check for approved request (waiting to be added as subscriber)
+    approved_request = await db.subscription_requests.find_one({
+        "$or": query_conditions,
+        "status": "approved",
+        "deleted_at": None
+    })
+    
+    if approved_request:
+        return {
+            "status": "approved",
+            "is_subscriber": False,
+            "has_pending": False,
+            "request_id": str(approved_request["_id"])
+        }
+    
+    return {"status": "none", "is_subscriber": False, "has_pending": False}
+
 
 @router.patch("/subscription-requests/{request_id}/approve")
 async def approve_subscription_request(request_id: str, request: Request):
