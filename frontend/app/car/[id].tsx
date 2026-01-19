@@ -283,25 +283,27 @@ export default function CarModelDetailScreen() {
               (!subscriptionStatus || subscriptionStatus === 'none') && styles.catalogBadgeDisabled
             ]}
             onPress={() => {
-              if (subscriptionStatus === 'subscriber' && carModel.catalog_pdf) {
+              if (subscriptionStatus === 'subscriber') {
                 // Download/Open PDF for subscribers
-                Linking.openURL(carModel.catalog_pdf);
-              } else if (subscriptionStatus === 'subscriber' && !carModel.catalog_pdf) {
-                // No catalog available
-                Alert.alert(
-                  language === 'ar' ? 'غير متاح' : 'Not Available',
-                  language === 'ar' ? 'لا يوجد كتالوج متاح لهذا الموديل حالياً' : 'No catalog available for this model yet'
-                );
+                handleDownloadCatalog();
               } else {
                 // Not a subscriber - navigate to subscription
                 router.push('/subscription-request');
               }
             }}
             activeOpacity={0.7}
+            disabled={downloadingCatalog}
           >
-            <Ionicons name="document-text" size={16} color="#FFD700" />
+            {downloadingCatalog ? (
+              <ActivityIndicator size="small" color="#FFD700" />
+            ) : (
+              <Ionicons name="document-text" size={16} color="#FFD700" />
+            )}
             <Text style={styles.catalogText}>
-              {language === 'ar' ? 'كتالوج الموديل' : 'Model Catalog'}
+              {downloadingCatalog 
+                ? (language === 'ar' ? 'جاري التحميل...' : 'Downloading...')
+                : (language === 'ar' ? 'كتالوج الموديل' : 'Model Catalog')
+              }
             </Text>
             {subscriptionStatus === 'subscriber' ? (
               carModel.catalog_pdf ? (
