@@ -1,10 +1,11 @@
 /**
  * useInfiniteProducts Hook
- * Implements cursor-based pagination for efficient product loading
- * Integrates with Zustand store for caching and offline support
- * v1.0.0
+ * OPTIMIZED: Implements cursor-based pagination using React Query's useInfiniteQuery
+ * Benefits: Built-in caching, automatic refetching, better error handling
+ * v2.0.0
  */
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
 import { productsApi } from '../services/api';
 import { useAppStore } from '../store/appStore';
 import { useDataCacheStore } from '../store/useDataCacheStore';
@@ -37,28 +38,22 @@ export interface UseInfiniteProductsResult {
   reset: () => void;
 }
 
+// Query key factory for consistent cache keys
+const productQueryKeys = {
+  all: ['products'] as const,
+  infinite: (filters: ProductFilters) => ['products', 'infinite', filters] as const,
+};
+
 export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}): UseInfiniteProductsResult {
   const { pageSize = 20, filters = {}, enabled = true } = options;
-  
-  // State
-  const [products, setProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [total, setTotal] = useState(0);
-  
-  // Refs for pagination
-  const nextCursorRef = useRef<string | null>(null);
-  const isLoadingRef = useRef(false);
   
   // Global store access
   const setGlobalProducts = useAppStore((state) => state.setProducts);
   const isOnline = useDataCacheStore((state) => state.isOnline);
   const cachedProducts = useDataCacheStore((state) => state.products);
+  const queryClient = useQueryClient();
   
-  // Build filter params
+  // Build filter params for API call
   const buildParams = useCallback((cursor?: string | null) => {
     const params: Record<string, any> = {
       limit: pageSize,
@@ -79,110 +74,114 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}): U
     
     return params;
   }, [pageSize, filters]);
-  
-  // Fetch products
-  const fetchProducts = useCallback(async (cursor?: string | null, isRefresh = false) => {
-    if (isLoadingRef.current) return;
-    
-    isLoadingRef.current = true;
-    
-    if (isRefresh) {
-      setIsRefreshing(true);
-    } else if (cursor) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
-    
-    setError(null);
-    
-    try {
-      const params = buildParams(cursor);
+
+  // Use React Query's useInfiniteQuery for data fetching
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    isRefetching,
+    error,
+    hasNextPage,
+    fetchNextPage: fetchNext,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: productQueryKeys.infinite(filters),
+    queryFn: async ({ pageParam }) => {
+      const params = buildParams(pageParam);
       const response = await productsApi.getAll(params);
       
-      const newProducts = response.data?.products || [];
+      const products = response.data?.products || [];
       const nextCursor = response.data?.next_cursor;
-      const moreAvailable = response.data?.has_more ?? newProducts.length >= pageSize;
-      const totalCount = response.data?.total || 0;
+      const hasMore = response.data?.has_more ?? products.length >= pageSize;
+      const total = response.data?.total || 0;
       
-      // Update state
-      setProducts((prev) => {
-        if (isRefresh || !cursor) {
-          return newProducts;
-        }
-        // Append new products, avoiding duplicates
-        const existingIds = new Set(prev.map(p => p.id));
-        const uniqueNew = newProducts.filter((p: any) => !existingIds.has(p.id));
-        return [...prev, ...uniqueNew];
-      });
-      
-      nextCursorRef.current = nextCursor;
-      setHasMore(moreAvailable);
-      setTotal(totalCount);
-      
-      // Update global store with latest products (first page only for cache)
-      if (!cursor || isRefresh) {
-        setGlobalProducts(newProducts);
-      }
-      
-    } catch (err: any) {
-      console.error('[useInfiniteProducts] Error fetching:', err);
-      setError(err.message || 'Failed to fetch products');
-      
-      // Fallback to cached products if offline
+      return {
+        products,
+        nextCursor,
+        hasMore,
+        total,
+      };
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.nextCursor : undefined;
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
+    refetchOnWindowFocus: false,
+    retry: isOnline ? 3 : 0,
+  });
+
+  // Flatten all pages into a single products array
+  const products = useMemo(() => {
+    if (!data?.pages) {
+      // Fallback to cached products if offline and no data
       if (!isOnline && cachedProducts.length > 0) {
-        setProducts(cachedProducts);
-        setHasMore(false);
-        setTotal(cachedProducts.length);
+        return cachedProducts;
       }
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-      setIsRefreshing(false);
-      isLoadingRef.current = false;
+      return [];
     }
-  }, [buildParams, pageSize, setGlobalProducts, isOnline, cachedProducts]);
-  
-  // Fetch next page
+    
+    // Deduplicate products across pages
+    const allProducts = data.pages.flatMap(page => page.products);
+    const seen = new Set<string>();
+    return allProducts.filter(product => {
+      if (seen.has(product.id)) return false;
+      seen.add(product.id);
+      return true;
+    });
+  }, [data?.pages, isOnline, cachedProducts]);
+
+  // Update global store when first page loads
+  useMemo(() => {
+    if (data?.pages?.[0]?.products) {
+      setGlobalProducts(data.pages[0].products);
+    }
+  }, [data?.pages?.[0]?.products, setGlobalProducts]);
+
+  // Calculate total from the latest page
+  const total = useMemo(() => {
+    if (!data?.pages?.length) return 0;
+    return data.pages[data.pages.length - 1].total;
+  }, [data?.pages]);
+
+  // Check if there are more pages
+  const hasMore = useMemo(() => {
+    return hasNextPage ?? false;
+  }, [hasNextPage]);
+
+  // Fetch next page wrapper
   const fetchNextPage = useCallback(async () => {
-    if (!hasMore || isLoadingMore || isLoading) return;
-    await fetchProducts(nextCursorRef.current);
-  }, [hasMore, isLoadingMore, isLoading, fetchProducts]);
-  
+    if (!hasMore || isFetchingNextPage || isLoading) return;
+    await fetchNext();
+  }, [hasMore, isFetchingNextPage, isLoading, fetchNext]);
+
   // Refresh (reload from start)
   const refresh = useCallback(async () => {
-    nextCursorRef.current = null;
-    setHasMore(true);
-    await fetchProducts(null, true);
-  }, [fetchProducts]);
-  
-  // Reset to initial state
+    await refetch();
+  }, [refetch]);
+
+  // Reset query
   const reset = useCallback(() => {
-    setProducts([]);
-    setIsLoading(true);
-    setIsLoadingMore(false);
-    setIsRefreshing(false);
-    setError(null);
-    setHasMore(true);
-    setTotal(0);
-    nextCursorRef.current = null;
-    isLoadingRef.current = false;
-  }, []);
-  
-  // Initial fetch and filter changes
-  useEffect(() => {
-    if (enabled) {
-      nextCursorRef.current = null;
-      fetchProducts(null);
-    }
-  }, [enabled, JSON.stringify(filters)]);
-  
+    queryClient.resetQueries({
+      queryKey: productQueryKeys.infinite(filters),
+    });
+  }, [queryClient, filters]);
+
+  // Format error message
+  const errorMessage = useMemo(() => {
+    if (!error) return null;
+    return (error as Error).message || 'Failed to fetch products';
+  }, [error]);
+
   return {
     products,
     isLoading,
-    isLoadingMore,
-    isRefreshing,
-    error,
+    isLoadingMore: isFetchingNextPage,
+    isRefreshing: isRefetching,
+    error: errorMessage,
     hasMore,
     total,
     fetchNextPage,
