@@ -406,6 +406,21 @@ const styles = StyleSheet.create({
   infoText: { flex: 1, fontSize: 13 },
   listCard: { borderRadius: 12, borderWidth: 1, padding: 16 },
   listTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+  },
   loader: { padding: 40 },
   emptyText: { textAlign: 'center', padding: 20 },
   productItem: { 
