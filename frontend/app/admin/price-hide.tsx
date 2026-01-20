@@ -183,7 +183,7 @@ export default function PriceHideAdmin() {
               {language === 'ar' ? 'لا توجد منتجات' : 'No products found'}
             </Text>
           ) : (
-            products.map((product) => (
+            filteredProducts.map((product) => (
               <View key={product.id} style={[styles.productItem, { borderColor: colors.border }]}>
                 {/* Product Image with Hidden Overlay */}
                 <View style={styles.imageContainer}>
