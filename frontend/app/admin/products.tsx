@@ -1014,6 +1014,7 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   contentContainer: { padding: 16 },
   flashListContainer: { minHeight: 300 },
+  productsListContainer: { minHeight: 100 },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 },
   breadcrumbRTL: { flexDirection: 'row-reverse' },
   breadcrumbText: { fontSize: 14 },
