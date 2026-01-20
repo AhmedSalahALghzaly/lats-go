@@ -156,8 +156,25 @@ export default function PriceHideAdmin() {
         {/* Products List */}
         <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.listTitle, { color: colors.text }]}>
-            {language === 'ar' ? 'المنتجات' : 'Products'} ({products.length})
+            {language === 'ar' ? 'المنتجات' : 'Products'} ({filteredProducts.length})
           </Text>
+
+          {/* Search Bar */}
+          <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={language === 'ar' ? 'ابحث بالاسم أو رقم المنتج...' : 'Search by name or SKU...'}
+              placeholderTextColor={colors.textSecondary}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
 
           {loading ? (
             <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
