@@ -95,6 +95,7 @@ export const authApi = {
 export const carBrandApi = {
   getAll: () => api.get('/car-brands'),
   create: (data: any) => api.post('/car-brands', data),
+  update: (id: string, data: any) => api.put(`/car-brands/${id}`, data),
   delete: (id: string) => api.delete(`/car-brands/${id}`),
 };
 
