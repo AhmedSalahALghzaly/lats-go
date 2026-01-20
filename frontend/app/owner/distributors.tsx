@@ -1,5 +1,6 @@
 /**
  * Distributors Management - Full CRUD with Car Brand Linkage
+ * OPTIMIZED: Uses FlashList as primary scroll container
  */
 import React, { useState, useCallback, useEffect } from 'react';
 import {
@@ -13,6 +14,7 @@ import {
   Image,
   Linking,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -486,67 +488,81 @@ export default function DistributorsScreen() {
     );
   }
 
-  // List View
+  // List Header Component for FlashList
+  const ListHeaderComponent = () => (
+    <View style={[styles.header, isRTL && styles.headerRTL]}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>{isRTL ? 'الموزعين' : 'Distributors'}</Text>
+      {isOwnerOrAdmin && (
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/owner/add-entity-form?entityType=distributor')}>
+          <Ionicons name="add" size={24} color="#FFF" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // Empty component for FlashList
+  const ListEmptyComponent = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="car-outline" size={64} color="rgba(255,255,255,0.5)" />
+      <Text style={styles.emptyText}>{isRTL ? 'لا يوجد موزعين' : 'No distributors yet'}</Text>
+    </View>
+  );
+
+  // Footer component to add bottom padding
+  const ListFooterComponent = () => (
+    <View style={{ height: insets.bottom + 40 }} />
+  );
+
+  // Render item for FlashList
+  const renderDistributorItem = ({ item: distributor }: { item: any }) => (
+    <VoidDeleteGesture key={distributor.id} onDelete={() => handleDeleteDistributor(distributor.id)}>
+      <TouchableOpacity style={styles.card} onPress={() => openProfileMode(distributor)}>
+        <BlurView intensity={15} tint="light" style={styles.cardBlur}>
+          <View style={[styles.cardAvatar, { backgroundColor: 'rgba(239,68,68,0.2)' }]}>
+            {distributor.profile_image ? (
+              <Image source={{ uri: distributor.profile_image }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="car" size={24} color="#EF4444" />
+            )}
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardName}>{distributor.name}</Text>
+            <Text style={styles.cardDetail}>{distributor.contact_email || distributor.phone || ''}</Text>
+            {(distributor.linked_brands || []).length > 0 && (
+              <Text style={[styles.cardBrands, { color: '#EF4444' }]}>
+                {(distributor.linked_brands || []).length} {isRTL ? 'علامات مرتبطة' : 'brands linked'}
+              </Text>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+        </BlurView>
+      </TouchableOpacity>
+    </VoidDeleteGesture>
+  );
+
+  // List View - OPTIMIZED with FlashList as primary scroll container
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#991B1B', '#DC2626', '#EF4444']} style={StyleSheet.absoluteFill} />
       <ErrorCapsule message={error || ''} visible={!!error} onDismiss={() => setError(null)} />
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />}
-      >
-        <View style={[styles.header, isRTL && styles.headerRTL]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isRTL ? 'الموزعين' : 'Distributors'}</Text>
-          {isOwnerOrAdmin && (
-            <TouchableOpacity style={styles.addButton} onPress={() => router.push('/owner/add-entity-form?entityType=distributor')}>
-              <Ionicons name="add" size={24} color="#FFF" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.listContainer}>
-          {distributors.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="car-outline" size={64} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.emptyText}>{isRTL ? 'لا يوجد موزعين' : 'No distributors yet'}</Text>
-            </View>
-          ) : (
-            distributors.map((distributor: any) => (
-              <VoidDeleteGesture key={distributor.id} onDelete={() => handleDeleteDistributor(distributor.id)}>
-                <TouchableOpacity style={styles.card} onPress={() => openProfileMode(distributor)}>
-                  <BlurView intensity={15} tint="light" style={styles.cardBlur}>
-                    <View style={[styles.cardAvatar, { backgroundColor: 'rgba(239,68,68,0.2)' }]}>
-                      {distributor.profile_image ? (
-                        <Image source={{ uri: distributor.profile_image }} style={styles.avatarImage} />
-                      ) : (
-                        <Ionicons name="car" size={24} color="#EF4444" />
-                      )}
-                    </View>
-                    <View style={styles.cardInfo}>
-                      <Text style={styles.cardName}>{distributor.name}</Text>
-                      <Text style={styles.cardDetail}>{distributor.contact_email || distributor.phone || ''}</Text>
-                      {(distributor.linked_brands || []).length > 0 && (
-                        <Text style={[styles.cardBrands, { color: '#EF4444' }]}>
-                          {(distributor.linked_brands || []).length} {isRTL ? 'علامات مرتبطة' : 'brands linked'}
-                        </Text>
-                      )}
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
-                  </BlurView>
-                </TouchableOpacity>
-              </VoidDeleteGesture>
-            ))
-          )}
-        </View>
-
-        <View style={{ height: insets.bottom + 40 }} />
-      </ScrollView>
+      <FlashList
+        data={distributors}
+        renderItem={renderDistributorItem}
+        keyExtractor={(item) => item.id}
+        estimatedItemSize={90}
+        ListHeaderComponent={ListHeaderComponent}
+        ListEmptyComponent={ListEmptyComponent}
+        ListFooterComponent={ListFooterComponent}
+        contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
+        }
+      />
     </View>
   );
 }

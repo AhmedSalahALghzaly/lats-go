@@ -1,5 +1,6 @@
 /**
  * Suppliers Management - Full CRUD with Brand Linkage
+ * OPTIMIZED: Uses FlashList as primary scroll container
  */
 import React, { useState, useCallback, useEffect } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -490,67 +492,81 @@ export default function SuppliersScreen() {
     );
   }
 
-  // List View
+  // List Header Component for FlashList
+  const ListHeaderComponent = () => (
+    <View style={[styles.header, isRTL && styles.headerRTL]}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>{isRTL ? 'الموردين' : 'Suppliers'}</Text>
+      {isOwnerOrAdmin && (
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/owner/add-entity-form?entityType=supplier')}>
+          <Ionicons name="add" size={24} color="#FFF" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // Empty component for FlashList
+  const ListEmptyComponent = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="briefcase-outline" size={64} color="rgba(255,255,255,0.5)" />
+      <Text style={styles.emptyText}>{isRTL ? 'لا يوجد موردين' : 'No suppliers yet'}</Text>
+    </View>
+  );
+
+  // Footer component to add bottom padding
+  const ListFooterComponent = () => (
+    <View style={{ height: insets.bottom + 40 }} />
+  );
+
+  // Render item for FlashList
+  const renderSupplierItem = ({ item: supplier }: { item: any }) => (
+    <VoidDeleteGesture key={supplier.id} onDelete={() => handleDeleteSupplier(supplier.id)}>
+      <TouchableOpacity style={styles.card} onPress={() => openProfileMode(supplier)}>
+        <BlurView intensity={15} tint="light" style={styles.cardBlur}>
+          <View style={styles.cardAvatar}>
+            {supplier.profile_image ? (
+              <Image source={{ uri: supplier.profile_image }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="briefcase" size={24} color="#14B8A6" />
+            )}
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardName}>{supplier.name}</Text>
+            <Text style={styles.cardDetail}>{supplier.contact_email || supplier.phone || ''}</Text>
+            {(supplier.linked_brands || []).length > 0 && (
+              <Text style={styles.cardBrands}>
+                {(supplier.linked_brands || []).length} {isRTL ? 'علامات مرتبطة' : 'brands linked'}
+              </Text>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+        </BlurView>
+      </TouchableOpacity>
+    </VoidDeleteGesture>
+  );
+
+  // List View - OPTIMIZED with FlashList as primary scroll container
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#0D9488', '#14B8A6', '#2DD4BF']} style={StyleSheet.absoluteFill} />
       <ErrorCapsule message={error || ''} visible={!!error} onDismiss={() => setError(null)} />
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />}
-      >
-        <View style={[styles.header, isRTL && styles.headerRTL]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isRTL ? 'الموردين' : 'Suppliers'}</Text>
-          {isOwnerOrAdmin && (
-            <TouchableOpacity style={styles.addButton} onPress={() => router.push('/owner/add-entity-form?entityType=supplier')}>
-              <Ionicons name="add" size={24} color="#FFF" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.listContainer}>
-          {suppliers.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="briefcase-outline" size={64} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.emptyText}>{isRTL ? 'لا يوجد موردين' : 'No suppliers yet'}</Text>
-            </View>
-          ) : (
-            suppliers.map((supplier: any) => (
-              <VoidDeleteGesture key={supplier.id} onDelete={() => handleDeleteSupplier(supplier.id)}>
-                <TouchableOpacity style={styles.card} onPress={() => openProfileMode(supplier)}>
-                  <BlurView intensity={15} tint="light" style={styles.cardBlur}>
-                    <View style={styles.cardAvatar}>
-                      {supplier.profile_image ? (
-                        <Image source={{ uri: supplier.profile_image }} style={styles.avatarImage} />
-                      ) : (
-                        <Ionicons name="briefcase" size={24} color="#14B8A6" />
-                      )}
-                    </View>
-                    <View style={styles.cardInfo}>
-                      <Text style={styles.cardName}>{supplier.name}</Text>
-                      <Text style={styles.cardDetail}>{supplier.contact_email || supplier.phone || ''}</Text>
-                      {(supplier.linked_brands || []).length > 0 && (
-                        <Text style={styles.cardBrands}>
-                          {(supplier.linked_brands || []).length} {isRTL ? 'علامات مرتبطة' : 'brands linked'}
-                        </Text>
-                      )}
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
-                  </BlurView>
-                </TouchableOpacity>
-              </VoidDeleteGesture>
-            ))
-          )}
-        </View>
-
-        <View style={{ height: insets.bottom + 40 }} />
-      </ScrollView>
+      <FlashList
+        data={suppliers}
+        renderItem={renderSupplierItem}
+        keyExtractor={(item) => item.id}
+        estimatedItemSize={90}
+        ListHeaderComponent={ListHeaderComponent}
+        ListEmptyComponent={ListEmptyComponent}
+        ListFooterComponent={ListFooterComponent}
+        contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
+        }
+      />
     </View>
   );
 }

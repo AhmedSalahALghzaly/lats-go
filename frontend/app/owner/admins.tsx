@@ -1,5 +1,6 @@
 /**
  * Admins Management Screen - Full CRUD with Revenue Settlement
+ * OPTIMIZED: Uses FlashList as primary scroll container
  */
 import React, { useState, useCallback, useEffect } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -174,6 +176,140 @@ export default function AdminsScreen() {
     }
   };
 
+  // List Header Component for FlashList
+  const ListHeaderComponent = () => (
+    <>
+      {/* Header */}
+      <View style={[styles.header, isRTL && styles.headerRTL]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{isRTL ? 'المسؤولين' : 'Admins'}</Text>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={() => setShowAddModal(true)}
+        >
+          <Ionicons name="add" size={24} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Stats Summary */}
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <Text style={styles.statValue}>{admins.length}</Text>
+          <Text style={styles.statLabel}>{isRTL ? 'إجمالي' : 'Total'}</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={styles.statValue}>
+            {admins.reduce((sum, a) => sum + (a.products_added || 0), 0)}
+          </Text>
+          <Text style={styles.statLabel}>{isRTL ? 'المنتجات' : 'Products'}</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={styles.statValue}>
+            {(admins.reduce((sum, a) => sum + (a.revenue || 0), 0) / 1000).toFixed(1)}K
+          </Text>
+          <Text style={styles.statLabel}>{isRTL ? 'الإيرادات' : 'Revenue'}</Text>
+        </View>
+      </View>
+    </>
+  );
+
+  // Empty component for FlashList
+  const ListEmptyComponent = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="shield-outline" size={64} color="rgba(255,255,255,0.5)" />
+      <Text style={styles.emptyText}>{isRTL ? 'لا يوجد مسؤولين' : 'No admins yet'}</Text>
+    </View>
+  );
+
+  // Footer component to add bottom padding
+  const ListFooterComponent = () => (
+    <View style={{ height: insets.bottom + 40 }} />
+  );
+
+  // Render item for FlashList
+  const renderAdminItem = ({ item: admin }: { item: any }) => (
+    <VoidDeleteGesture key={admin.id} onDelete={() => handleDeleteAdmin(admin.id)}>
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => handleExpandAdmin(admin.id)}
+        onLongPress={() => handleLongPressReset(admin)}
+        delayLongPress={800}
+      >
+        <BlurView intensity={15} tint="light" style={styles.cardBlur}>
+          <View style={styles.cardHeader}>
+            <View style={styles.avatar}>
+              <Ionicons name="shield-checkmark" size={24} color="#10B981" />
+            </View>
+            <View style={styles.info}>
+              <Text style={styles.name}>{admin.name || admin.email}</Text>
+              <Text style={styles.email}>{admin.email}</Text>
+            </View>
+            <View style={styles.revenueBox}>
+              <Text style={styles.revenueValue}>{admin.revenue || 0}</Text>
+              <Text style={styles.revenueLabel}>ج.م</Text>
+            </View>
+          </View>
+
+          {/* Stats Row */}
+          <View style={styles.adminStats}>
+            <View style={styles.adminStat}>
+              <Ionicons name="cube" size={16} color="#FFF" />
+              <Text style={styles.adminStatText}>{admin.products_added || 0}</Text>
+            </View>
+            <View style={styles.adminStat}>
+              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+              <Text style={styles.adminStatText}>{admin.products_delivered || 0}</Text>
+            </View>
+            <View style={styles.adminStat}>
+              <Ionicons name="time" size={16} color="#F59E0B" />
+              <Text style={styles.adminStatText}>{admin.products_processing || 0}</Text>
+            </View>
+            <Ionicons 
+              name={expandedAdminId === admin.id ? 'chevron-up' : 'chevron-down'} 
+              size={20} 
+              color="rgba(255,255,255,0.5)" 
+            />
+          </View>
+
+          {/* Expanded Products */}
+          {expandedAdminId === admin.id && (
+            <View style={styles.expandedSection}>
+              <Text style={styles.expandedTitle}>
+                {isRTL ? 'المنتجات' : 'Products'}
+              </Text>
+              {adminProducts.length === 0 ? (
+                <Text style={styles.noProducts}>
+                  {isRTL ? 'لا توجد منتجات' : 'No products'}
+                </Text>
+              ) : (
+                adminProducts.slice(0, 5).map((product: any) => (
+                  <View key={product.id} style={styles.productRow}>
+                    <Text style={styles.productName} numberOfLines={1}>
+                      {product.name}
+                    </Text>
+                    <Text style={styles.productPrice}>{product.price} ج.م</Text>
+                  </View>
+                ))
+              )}
+              {adminProducts.length > 5 && (
+                <Text style={styles.moreProducts}>
+                  +{adminProducts.length - 5} {isRTL ? 'منتجات أخرى' : 'more products'}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Long press hint */}
+          <Text style={styles.longPressHint}>
+            {isRTL ? 'اضغط مطولاً لإعادة تعيين' : 'Long press to reset revenue'}
+          </Text>
+        </BlurView>
+      </TouchableOpacity>
+    </VoidDeleteGesture>
+  );
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#065F46', '#059669', '#10B981']} style={StyleSheet.absoluteFill} />
@@ -189,140 +325,21 @@ export default function AdminsScreen() {
       {/* Confetti */}
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
+      {/* FlashList as primary scroll container */}
+      <FlashList
+        data={admins}
+        renderItem={renderAdminItem}
+        keyExtractor={(item) => item.id}
+        estimatedItemSize={180}
+        ListHeaderComponent={ListHeaderComponent}
+        ListEmptyComponent={ListEmptyComponent}
+        ListFooterComponent={ListFooterComponent}
+        contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16 }}
+        extraData={expandedAdminId}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
         }
-      >
-        {/* Header */}
-        <View style={[styles.header, isRTL && styles.headerRTL]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isRTL ? 'المسؤولين' : 'Admins'}</Text>
-          <TouchableOpacity 
-            style={styles.addButton} 
-            onPress={() => setShowAddModal(true)}
-          >
-            <Ionicons name="add" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Stats Summary */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{admins.length}</Text>
-            <Text style={styles.statLabel}>{isRTL ? 'إجمالي' : 'Total'}</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>
-              {admins.reduce((sum, a) => sum + (a.products_added || 0), 0)}
-            </Text>
-            <Text style={styles.statLabel}>{isRTL ? 'المنتجات' : 'Products'}</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>
-              {(admins.reduce((sum, a) => sum + (a.revenue || 0), 0) / 1000).toFixed(1)}K
-            </Text>
-            <Text style={styles.statLabel}>{isRTL ? 'الإيرادات' : 'Revenue'}</Text>
-          </View>
-        </View>
-
-        {/* Admins List */}
-        <View style={styles.listContainer}>
-          {admins.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="shield-outline" size={64} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.emptyText}>{isRTL ? 'لا يوجد مسؤولين' : 'No admins yet'}</Text>
-            </View>
-          ) : (
-            admins.map((admin: any) => (
-              <VoidDeleteGesture key={admin.id} onDelete={() => handleDeleteAdmin(admin.id)}>
-                <TouchableOpacity 
-                  style={styles.card}
-                  onPress={() => handleExpandAdmin(admin.id)}
-                  onLongPress={() => handleLongPressReset(admin)}
-                  delayLongPress={800}
-                >
-                  <BlurView intensity={15} tint="light" style={styles.cardBlur}>
-                    <View style={styles.cardHeader}>
-                      <View style={styles.avatar}>
-                        <Ionicons name="shield-checkmark" size={24} color="#10B981" />
-                      </View>
-                      <View style={styles.info}>
-                        <Text style={styles.name}>{admin.name || admin.email}</Text>
-                        <Text style={styles.email}>{admin.email}</Text>
-                      </View>
-                      <View style={styles.revenueBox}>
-                        <Text style={styles.revenueValue}>{admin.revenue || 0}</Text>
-                        <Text style={styles.revenueLabel}>ج.م</Text>
-                      </View>
-                    </View>
-
-                    {/* Stats Row */}
-                    <View style={styles.adminStats}>
-                      <View style={styles.adminStat}>
-                        <Ionicons name="cube" size={16} color="#FFF" />
-                        <Text style={styles.adminStatText}>{admin.products_added || 0}</Text>
-                      </View>
-                      <View style={styles.adminStat}>
-                        <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                        <Text style={styles.adminStatText}>{admin.products_delivered || 0}</Text>
-                      </View>
-                      <View style={styles.adminStat}>
-                        <Ionicons name="time" size={16} color="#F59E0B" />
-                        <Text style={styles.adminStatText}>{admin.products_processing || 0}</Text>
-                      </View>
-                      <Ionicons 
-                        name={expandedAdminId === admin.id ? 'chevron-up' : 'chevron-down'} 
-                        size={20} 
-                        color="rgba(255,255,255,0.5)" 
-                      />
-                    </View>
-
-                    {/* Expanded Products */}
-                    {expandedAdminId === admin.id && (
-                      <View style={styles.expandedSection}>
-                        <Text style={styles.expandedTitle}>
-                          {isRTL ? 'المنتجات' : 'Products'}
-                        </Text>
-                        {adminProducts.length === 0 ? (
-                          <Text style={styles.noProducts}>
-                            {isRTL ? 'لا توجد منتجات' : 'No products'}
-                          </Text>
-                        ) : (
-                          adminProducts.slice(0, 5).map((product: any) => (
-                            <View key={product.id} style={styles.productRow}>
-                              <Text style={styles.productName} numberOfLines={1}>
-                                {product.name}
-                              </Text>
-                              <Text style={styles.productPrice}>{product.price} ج.م</Text>
-                            </View>
-                          ))
-                        )}
-                        {adminProducts.length > 5 && (
-                          <Text style={styles.moreProducts}>
-                            +{adminProducts.length - 5} {isRTL ? 'منتجات أخرى' : 'more products'}
-                          </Text>
-                        )}
-                      </View>
-                    )}
-
-                    {/* Long press hint */}
-                    <Text style={styles.longPressHint}>
-                      {isRTL ? 'اضغط مطولاً لإعادة تعيين' : 'Long press to reset revenue'}
-                    </Text>
-                  </BlurView>
-                </TouchableOpacity>
-              </VoidDeleteGesture>
-            ))
-          )}
-        </View>
-
-        <View style={{ height: insets.bottom + 40 }} />
-      </ScrollView>
+      />
 
       {/* Add Admin Modal */}
       {showAddModal && (
@@ -379,7 +396,7 @@ const styles = StyleSheet.create({
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, fontSize: 24, fontWeight: '700', color: '#FFF' },
   addButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  statsRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  statsRow: { flexDirection: 'row', gap: 12, marginTop: 8, marginBottom: 16 },
   statBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 16, alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: '700', color: '#FFF' },
   statLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
