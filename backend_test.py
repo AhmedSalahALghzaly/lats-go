@@ -15,7 +15,7 @@ from typing import Dict, List, Any
 BASE_URL = "http://localhost:8001"
 API_BASE = f"{BASE_URL}/api"
 
-class NotificationSystemTester:
+class AdminOwnerPanelTester:
     def __init__(self):
         self.session = None
         self.test_results = []
