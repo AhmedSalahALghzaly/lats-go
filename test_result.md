@@ -780,10 +780,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "orders.filter error fix validation"
-    - "OrderStatusIndicator animation performance"
-    - "Image transparency verification"
-    - "BlurView effect display"
+    - "Al-Ghazaly Auto Parts Mobile App End-to-End Testing"
+    - "Mobile responsiveness and UI functionality"
+    - "Navigation and user experience testing"
+    - "Authentication and security verification"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
