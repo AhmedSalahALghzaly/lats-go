@@ -1,15 +1,18 @@
 """
-Analytics Routes
+Analytics Routes - Complete Sub-Endpoints
+Al-Ghazaly Auto Parts API v4.1
 """
 from fastapi import APIRouter, HTTPException, Request
-from typing import Optional
-from datetime import datetime
+from typing import Optional, List
+from datetime import datetime, timedelta, timezone
 
 from ....core.database import db
 from ....core.security import get_current_user, get_user_role, serialize_doc
 
 router = APIRouter(prefix="/analytics")
 
+
+# ==================== Analytics Overview Endpoint ====================
 @router.get("/overview")
 async def get_analytics_overview(request: Request, start_date: Optional[str] = None, end_date: Optional[str] = None):
     user = await get_current_user(request)
