@@ -705,18 +705,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-      },
-      default: {
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-    }),
+    // Shadow removed as per user request
   },
   arrowLeft: {
     left: 6,
