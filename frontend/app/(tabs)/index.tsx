@@ -2,7 +2,7 @@
  * Home Screen - Optimized with React Query and FlashList
  * Main landing page with car brands, offers, products, and search
  */
-import React, { useState, useCallback, useRef, useMemo, memo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, memo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -36,7 +36,6 @@ import { syncService } from '../../src/services/syncService';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useHomeScreenQuery } from '../../src/hooks/queries';
-import { useEffect } from 'react';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
