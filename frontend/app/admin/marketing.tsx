@@ -1,8 +1,9 @@
 /**
  * Marketing Suite - Admin Panel
  * Manages Promotions (Banners/Sliders) and Bundle Offers
+ * REFACTORED: Uses React Query for data fetching and mutations
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,10 +25,15 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { Header } from '../../src/components/Header';
-import { promotionApi, bundleOfferApi, productApi, carModelApi } from '../../src/services/api';
+import { promotionApi, bundleOfferApi } from '../../src/services/api';
 import { ImageUploader } from '../../src/components/ui/ImageUploader';
 import { Toast } from '../../src/components/ui/FormFeedback';
 import { DraggablePromotionList } from '../../src/components/ui/DraggablePromotionList';
+import {
+  useMarketingQuery,
+  usePromotionMutations,
+  useBundleMutations,
+} from '../../src/hooks/queries';
 
 interface Promotion {
   id: string;
