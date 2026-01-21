@@ -1,17 +1,15 @@
 /**
  * Admins Management Screen - Full CRUD with Revenue Settlement
- * OPTIMIZED: Uses FlashList as primary scroll container
+ * REFACTORED: Uses FlashList and React Query for data fetching
  */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Alert,
-  RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,102 +19,67 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '../../src/store/appStore';
-import { adminApi } from '../../src/services/api';
 import { VoidDeleteGesture } from '../../src/components/ui/VoidDeleteGesture';
 import { ErrorCapsule } from '../../src/components/ui/ErrorCapsule';
 import { ConfettiEffect } from '../../src/components/ui/ConfettiEffect';
+import { useAdminsQuery, useAdminProductsQuery, useAdminMutations } from '../../src/hooks/queries';
 
 export default function AdminsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const language = useAppStore((state) => state.language);
   const admins = useAppStore((state) => state.admins);
-  const setAdmins = useAppStore((state) => state.setAdmins);
   const isRTL = language === 'ar';
 
+  // Use React Query for data fetching
+  const {
+    isLoading,
+    isError,
+    refetch,
+    isRefetching,
+  } = useAdminsQuery();
+
+  // Mutations
+  const { createAdmin, deleteAdmin, clearRevenue } = useAdminMutations();
+
   // Local state
-  const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [expandedAdminId, setExpandedAdminId] = useState<string | null>(null);
-  const [adminProducts, setAdminProducts] = useState<any[]>([]);
 
-  // Fetch admins
-  const fetchAdmins = async () => {
-    try {
-      const res = await adminApi.getAll();
-      setAdmins(res.data || []);
-    } catch (err) {
-      console.error('Error fetching admins:', err);
-    }
-  };
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchAdmins();
-    setRefreshing(false);
-  }, []);
-
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
+  // Fetch admin products when expanded
+  const { data: adminProducts = [] } = useAdminProductsQuery(expandedAdminId);
 
   // Add admin with optimistic update
   const handleAddAdmin = async () => {
     if (!newEmail.trim()) return;
 
-    const tempId = `temp-${Date.now()}`;
-    const optimisticAdmin = {
-      id: tempId,
-      email: newEmail.trim(),
-      name: newName.trim() || newEmail.split('@')[0],
-      revenue: 0,
-      products_added: 0,
-      products_delivered: 0,
-      products_processing: 0,
-    };
-
-    // Optimistic update
-    setAdmins([...admins, optimisticAdmin]);
     setShowAddModal(false);
+    setShowConfetti(true);
     setNewEmail('');
     setNewName('');
-    setShowConfetti(true);
 
     try {
-      setLoading(true);
-      const res = await adminApi.create(newEmail.trim(), newName.trim() || undefined);
-      // Replace temp with real data
-      setAdmins(admins.filter(a => a.id !== tempId).concat(res.data));
+      await createAdmin.mutateAsync({
+        email: newEmail.trim(),
+        name: newName.trim() || undefined,
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
-      // Rollback optimistic update
-      setAdmins(admins.filter(a => a.id !== tempId));
       setError(err.response?.data?.detail || 'Failed to add admin');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setLoading(false);
     }
   };
 
   // Delete admin with optimistic update
   const handleDeleteAdmin = async (adminId: string) => {
-    const adminToDelete = admins.find(a => a.id === adminId);
-    if (!adminToDelete) return;
-
-    // Optimistic update
-    setAdmins(admins.filter(a => a.id !== adminId));
-
     try {
-      await adminApi.delete(adminId);
+      await deleteAdmin.mutateAsync(adminId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
-      // Rollback
-      setAdmins([...admins, adminToDelete]);
       setError(err.response?.data?.detail || 'Failed to delete admin');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
@@ -127,13 +90,13 @@ export default function AdminsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(
       language === 'ar' ? 'إعادة تعيين الإيرادات' : 'Reset Revenue',
-      language === 'ar' 
-        ? `هل تريد إعادة تعيين إيرادات ${admin.name}؟` 
+      language === 'ar'
+        ? `هل تريد إعادة تعيين إيرادات ${admin.name}؟`
         : `Reset revenue for ${admin.name}?`,
       [
         { text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
-        { 
-          text: language === 'ar' ? 'إعادة تعيين' : 'Reset', 
+        {
+          text: language === 'ar' ? 'إعادة تعيين' : 'Reset',
           style: 'destructive',
           onPress: () => handleClearRevenue(admin.id),
         },
@@ -143,17 +106,10 @@ export default function AdminsScreen() {
 
   // Clear revenue with optimistic update
   const handleClearRevenue = async (adminId: string) => {
-    const prevAdmins = [...admins];
-    
-    // Optimistic update
-    setAdmins(admins.map(a => a.id === adminId ? { ...a, revenue: 0 } : a));
-
     try {
-      await adminApi.clearRevenue(adminId);
+      await clearRevenue.mutateAsync(adminId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
-      // Rollback
-      setAdmins(prevAdmins);
       setError(err.response?.data?.detail || 'Failed to reset revenue');
     }
   };
@@ -162,22 +118,13 @@ export default function AdminsScreen() {
   const handleExpandAdmin = async (adminId: string) => {
     if (expandedAdminId === adminId) {
       setExpandedAdminId(null);
-      setAdminProducts([]);
       return;
     }
-
     setExpandedAdminId(adminId);
-    try {
-      const res = await adminApi.getProducts(adminId);
-      setAdminProducts(res.data || []);
-    } catch (err) {
-      console.error('Error fetching admin products:', err);
-      setAdminProducts([]);
-    }
   };
 
   // List Header Component for FlashList
-  const ListHeaderComponent = () => (
+  const ListHeaderComponent = useCallback(() => (
     <>
       {/* Header */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
@@ -185,8 +132,8 @@ export default function AdminsScreen() {
           <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isRTL ? 'المسؤولين' : 'Admins'}</Text>
-        <TouchableOpacity 
-          style={styles.addButton} 
+        <TouchableOpacity
+          style={styles.addButton}
           onPress={() => setShowAddModal(true)}
         >
           <Ionicons name="add" size={24} color="#FFF" />
@@ -213,25 +160,25 @@ export default function AdminsScreen() {
         </View>
       </View>
     </>
-  );
+  ), [admins, isRTL, router]);
 
   // Empty component for FlashList
-  const ListEmptyComponent = () => (
+  const ListEmptyComponent = useCallback(() => (
     <View style={styles.emptyState}>
       <Ionicons name="shield-outline" size={64} color="rgba(255,255,255,0.5)" />
       <Text style={styles.emptyText}>{isRTL ? 'لا يوجد مسؤولين' : 'No admins yet'}</Text>
     </View>
-  );
+  ), [isRTL]);
 
   // Footer component to add bottom padding
-  const ListFooterComponent = () => (
+  const ListFooterComponent = useCallback(() => (
     <View style={{ height: insets.bottom + 40 }} />
-  );
+  ), [insets.bottom]);
 
   // Render item for FlashList
-  const renderAdminItem = ({ item: admin }: { item: any }) => (
+  const renderAdminItem = useCallback(({ item: admin }: { item: any }) => (
     <VoidDeleteGesture key={admin.id} onDelete={() => handleDeleteAdmin(admin.id)}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.card}
         onPress={() => handleExpandAdmin(admin.id)}
         onLongPress={() => handleLongPressReset(admin)}
@@ -266,10 +213,10 @@ export default function AdminsScreen() {
               <Ionicons name="time" size={16} color="#F59E0B" />
               <Text style={styles.adminStatText}>{admin.products_processing || 0}</Text>
             </View>
-            <Ionicons 
-              name={expandedAdminId === admin.id ? 'chevron-up' : 'chevron-down'} 
-              size={20} 
-              color="rgba(255,255,255,0.5)" 
+            <Ionicons
+              name={expandedAdminId === admin.id ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="rgba(255,255,255,0.5)"
             />
           </View>
 
@@ -308,12 +255,12 @@ export default function AdminsScreen() {
         </BlurView>
       </TouchableOpacity>
     </VoidDeleteGesture>
-  );
+  ), [expandedAdminId, adminProducts, isRTL, handleDeleteAdmin, handleExpandAdmin, handleLongPressReset]);
 
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#065F46', '#059669', '#10B981']} style={StyleSheet.absoluteFill} />
-      
+
       {/* Error Capsule */}
       <ErrorCapsule
         message={error || ''}
@@ -335,10 +282,9 @@ export default function AdminsScreen() {
         ListEmptyComponent={ListEmptyComponent}
         ListFooterComponent={ListFooterComponent}
         contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16 }}
-        extraData={expandedAdminId}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
-        }
+        extraData={[expandedAdminId, adminProducts]}
+        onRefresh={refetch}
+        refreshing={isRefetching}
       />
 
       {/* Add Admin Modal */}
@@ -366,16 +312,16 @@ export default function AdminsScreen() {
               onChangeText={setNewName}
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowAddModal(false)}
               >
                 <Text style={styles.cancelButtonText}>{isRTL ? 'إلغاء' : 'Cancel'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={handleAddAdmin}
-                disabled={loading}
+                disabled={createAdmin.isPending}
               >
                 <Text style={styles.confirmButtonText}>{isRTL ? 'إضافة' : 'Add'}</Text>
               </TouchableOpacity>
@@ -389,8 +335,6 @@ export default function AdminsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16 },
   header: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, gap: 12 },
   headerRTL: { flexDirection: 'row-reverse' },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
@@ -400,7 +344,6 @@ const styles = StyleSheet.create({
   statBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 16, alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: '700', color: '#FFF' },
   statLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
-  listContainer: { marginTop: 24 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { color: 'rgba(255,255,255,0.5)', fontSize: 16, marginTop: 16 },
   card: { marginBottom: 12, borderRadius: 16, overflow: 'hidden' },
