@@ -705,6 +705,18 @@ agent_communication:
       - working: true
         agent: "testing"
         comment: "✅ ENHANCED NOTIFICATION SYSTEM TESTING COMPLETE: All 22 backend API tests passed (100% success rate). Comprehensive testing of notification system focus areas: 1) Order Status Notification Endpoints - All status values (pending, preparing, shipped, out_for_delivery, delivered, cancelled) properly secured with authentication (403 Forbidden for unauthenticated access). 2) Promotional Notification Triggers - POST /api/promotions and POST /api/bundle-offers correctly require admin authentication (403 Forbidden). GET endpoints return valid data with Arabic localization support. 3) Admin Activity Notification Triggers - POST /api/products successfully creates products (should trigger admin notifications), POST /api/auth/session properly handles invalid sessions (500 error as expected). 4) Notification Service Endpoints - GET /api/notifications correctly requires authentication (401 Unauthorized). 5) Localization Support - Both promotions and bundle offers have Arabic field support (title_ar, description_ar, name_ar). 6) Notification Categories - All three categories (order, promotion, admin_activity) have corresponding API endpoints that trigger notifications. Backend notification service integration is fully operational and ready for production use."
+
+  - task: "Admin and Owner Panel Backend API Testing"
+    implemented: true
+    working: false
+    file: "backend/app/api/v1/endpoints/"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ ADMIN AND OWNER PANEL API TESTING COMPLETE: 17/25 tests passed (68% success rate). CRITICAL ISSUES FOUND: 1) Car Brands PUT endpoint missing (405 Method Not Allowed) - no update functionality available. 2) Car Models POST endpoint validation error - requires 'brand_id' field but test used 'car_brand_id'. 3) Orders PUT status endpoint missing (405 Method Not Allowed) - cannot update order status. 4) Authentication required for Suppliers/Distributors/Customers APIs (403 Access denied) - all CRUD operations require owner/partner/admin roles. WORKING ENDPOINTS: Car Brands (GET, POST, DELETE), Car Models (GET), Categories (full CRUD), Product Brands (full CRUD), Orders (GET with auth), Customers (GET with auth). AUTHENTICATION PROPERLY ENFORCED: All admin endpoints correctly require authentication and return 403/401 for unauthorized access."
   # ======================= Phase 1 Technical Fixes (Jan 2026) =======================
   
   - task: "Fix orders.filter is not a function Error"
