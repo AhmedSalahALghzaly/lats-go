@@ -239,8 +239,10 @@ export const partnerApi = {
 // Admin APIs
 export const adminApi = {
   getAll: () => api.get('/admins'),
+  getById: (id: string) => api.get(`/admins/${id}`),
   checkAccess: () => api.get('/admins/check-access'),  // Bug Fix #3: For access control checks
   create: (email: string, name?: string) => api.post('/admins', { email, name }),
+  update: (id: string, data: { email: string; name?: string }) => api.put(`/admins/${id}`, data),
   delete: (id: string) => api.delete(`/admins/${id}`),
   getProducts: (adminId: string) => api.get(`/admins/${adminId}/products`),
   settleRevenue: (adminId: string, productIds: string[], totalAmount: number) =>
