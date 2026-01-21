@@ -11,9 +11,9 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Any
 
-# Test Configuration
-BASE_URL = "http://localhost:8001"
-API_BASE = f"{BASE_URL}/api"
+# Test Configuration - Using public URL from frontend .env
+BASE_URL = "/api"  # Using the public endpoint from REACT_APP_BACKEND_URL
+API_BASE = BASE_URL
 
 class AdminOwnerPanelTester:
     def __init__(self):
