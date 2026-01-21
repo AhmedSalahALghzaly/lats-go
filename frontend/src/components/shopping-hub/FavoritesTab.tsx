@@ -1,10 +1,9 @@
 /**
  * FavoritesTab - Favorites list display tab
- * Shows user's favorite products with actions
- * REFACTORED: Uses FlashList for better performance on long lists
+ * FIXED: FlashList now handles scrolling as primary scroll container
  */
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -19,6 +18,8 @@ interface FavoritesTabProps {
   isAdminView: boolean;
   onAddToCart: (product: any) => void;
   onToggleFavorite: (productId: string) => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
 export const FavoritesTab: React.FC<FavoritesTabProps> = ({
@@ -27,6 +28,8 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
   isAdminView,
   onAddToCart,
   onToggleFavorite,
+  onRefresh,
+  refreshing = false,
 }) => {
   const { colors } = useTheme();
   const { language } = useTranslation();
@@ -35,32 +38,23 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
   const safeFavorites = Array.isArray(favorites) ? favorites : [];
 
   // Render favorite item for FlashList
-  const renderFavoriteItem = useCallback(({ item, index }: { item: any; index: number }) => (
+  const renderFavoriteItem = useCallback(({ item }: { item: any }) => (
     <Pressable
-      style={({ pressed }) => [
-        styles.productCard,
-        { borderColor: colors.border },
-        pressed && { opacity: 0.7, backgroundColor: colors.surface }
-      ]}
+      style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => router.push(`/product/${item.product_id || item.product?.id}`)}
     >
       <View style={[styles.productThumb, { backgroundColor: colors.surface }]}>
         {item.product?.image_url ? (
           <Image source={{ uri: item.product.image_url }} style={styles.productImage} />
         ) : (
-          <Ionicons name="cube-outline" size={24} color={colors.textSecondary} />
+          <Ionicons name="cube-outline" size={20} color={colors.textSecondary} />
         )}
       </View>
 
       <View style={styles.productInfo}>
-        <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
+        <Text style={[styles.productName, { color: colors.text }]} numberOfLines={1}>
           {language === 'ar' ? item.product?.name_ar : item.product?.name}
         </Text>
-        {item.product?.sku && (
-          <Text style={[styles.productSku, { color: colors.textSecondary }]}>
-            SKU: {item.product.sku}
-          </Text>
-        )}
         <Text style={[styles.productPrice, { color: NEON_NIGHT_THEME.primary }]}>
           {item.product?.price?.toFixed(0)} ج.م
         </Text>
@@ -68,25 +62,17 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
 
       <View style={styles.productActions}>
         <Pressable
-          style={({ pressed }) => [
-            styles.iconActionBtn,
-            { backgroundColor: NEON_NIGHT_THEME.primary },
-            pressed && { opacity: 0.7 }
-          ]}
+          style={[styles.iconActionBtn, { backgroundColor: NEON_NIGHT_THEME.primary }]}
           onPress={() => onAddToCart(item.product)}
         >
-          <Ionicons name="cart-outline" size={18} color="#FFF" />
+          <Ionicons name="cart-outline" size={16} color="#FFF" />
         </Pressable>
         {!isAdminView && (
           <Pressable
-            style={({ pressed }) => [
-              styles.iconActionBtn,
-              { backgroundColor: '#EF4444' },
-              pressed && { opacity: 0.7 }
-            ]}
+            style={[styles.iconActionBtn, { backgroundColor: '#EF4444' }]}
             onPress={() => onToggleFavorite(item.product_id || item.product?.id)}
           >
-            <Ionicons name="heart-dislike-outline" size={18} color="#FFF" />
+            <Ionicons name="heart-dislike-outline" size={16} color="#FFF" />
           </Pressable>
         )}
       </View>
@@ -105,53 +91,56 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
     </View>
   ), [colors, language, isRTL, safeFavorites.length]);
 
+  // List footer
+  const ListFooterComponent = useCallback(() => (
+    <View style={{ height: 100 }} />
+  ), []);
+
   // Empty state
   const ListEmptyComponent = useCallback(() => (
-    <EmptyState
-      icon="heart-outline"
-      title={language === 'ar' ? 'لا توجد منتجات مفضلة' : 'No favorites yet'}
-    />
-  ), [language]);
+    <View style={[styles.emptyContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <EmptyState
+        icon="heart-outline"
+        title={language === 'ar' ? 'لا توجد منتجات مفضلة' : 'No favorites yet'}
+      />
+    </View>
+  ), [language, colors]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {safeFavorites.length === 0 ? (
-        <>
-          <ListHeaderComponent />
-          <ListEmptyComponent />
-        </>
-      ) : (
-        <View style={styles.listWrapper}>
-          <FlashList
-            data={safeFavorites}
-            renderItem={renderFavoriteItem}
-            keyExtractor={(item, index) => item.product_id || item.id || `fav-item-${index}`}
-            estimatedItemSize={80}
-            ListHeaderComponent={ListHeaderComponent}
-            scrollEnabled={false}
-            extraData={[colors, language, isRTL, isAdminView]}
+    <FlashList
+      data={safeFavorites}
+      renderItem={renderFavoriteItem}
+      keyExtractor={(item, index) => item.product_id || item.id || `fav-item-${index}`}
+      estimatedItemSize={70}
+      ListHeaderComponent={ListHeaderComponent}
+      ListFooterComponent={ListFooterComponent}
+      ListEmptyComponent={ListEmptyComponent}
+      contentContainerStyle={styles.listContainer}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={NEON_NIGHT_THEME.primary}
           />
-        </View>
-      )}
-    </View>
+        ) : undefined
+      }
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-  },
-  listWrapper: {
-    minHeight: 100,
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   rowReverse: {
     flexDirection: 'row-reverse',
@@ -170,49 +159,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  emptyContainer: {
+    marginTop: 8,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+  },
   productCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
   },
   productThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   productImage: {
-    width: 56,
-    height: 56,
+    width: 44,
+    height: 44,
   },
   productInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   productName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: 2,
   },
-  productSku: {
-    fontSize: 11,
-    marginBottom: 4,
-  },
   productPrice: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   productActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   iconActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

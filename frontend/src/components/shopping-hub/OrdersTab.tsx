@@ -1,10 +1,9 @@
 /**
  * OrdersTab - Order history and status management tab
- * Shows orders with admin status update actions
- * REFACTORED: Uses FlashList for better performance on long lists
+ * FIXED: FlashList now handles scrolling as primary scroll container
  */
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -19,6 +18,8 @@ interface OrdersTabProps {
   canEditOrderStatus: boolean;
   updatingOrderId: string | null;
   onUpdateStatus: (orderId: string, newStatus: string) => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
 /**
@@ -54,11 +55,7 @@ const StatusActionButton: React.FC<{
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.statusActionBtn,
-        { backgroundColor: color },
-        pressed && { opacity: 0.7 }
-      ]}
+      style={[styles.statusActionBtn, { backgroundColor: color }]}
       onPress={onPress}
       disabled={updatingOrderId !== null}
     >
@@ -66,7 +63,7 @@ const StatusActionButton: React.FC<{
         <ActivityIndicator size="small" color="#FFF" />
       ) : (
         <>
-          <Ionicons name={icon as any} size={14} color="#FFF" />
+          <Ionicons name={icon as any} size={12} color="#FFF" />
           <Text style={styles.statusActionText}>{language === 'ar' ? labelAr : label}</Text>
         </>
       )}
@@ -80,6 +77,8 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
   canEditOrderStatus,
   updatingOrderId,
   onUpdateStatus,
+  onRefresh,
+  refreshing = false,
 }) => {
   const { colors } = useTheme();
   const { language } = useTranslation();
@@ -94,19 +93,16 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   }, [language]);
 
   // Render order item for FlashList
-  const renderOrderItem = useCallback(({ item: order, index }: { item: any; index: number }) => {
+  const renderOrderItem = useCallback(({ item: order }: { item: any }) => {
     const statusInfo = getStatusInfo(order.status);
     return (
-      <View style={[styles.orderCard, { borderColor: colors.border }]}>
+      <View style={[styles.orderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.orderHeader, isRTL && styles.rowReverse]}>
           <Pressable
-            style={({ pressed }) => pressed && { opacity: 0.7 }}
             onPress={() => router.push(`/admin/order/${order.id}`)}
           >
             <Text style={[styles.orderNumber, { color: NEON_NIGHT_THEME.primary }]}>
@@ -114,20 +110,16 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
             </Text>
           </Pressable>
           <View style={[styles.statusBadge, { backgroundColor: statusInfo.color }]}>
-            <Ionicons name={statusInfo.icon as any} size={12} color="#FFF" />
+            <Ionicons name={statusInfo.icon as any} size={10} color="#FFF" />
             <Text style={styles.statusText}>
               {language === 'ar' ? statusInfo.labelAr : statusInfo.label}
             </Text>
           </View>
         </View>
 
-        <Text style={[styles.orderDate, { color: colors.textSecondary }]}>
-          {formatDate(order.created_at)}
-        </Text>
-
         <View style={[styles.orderDetails, isRTL && styles.rowReverse]}>
-          <Text style={[styles.orderItems, { color: colors.textSecondary }]}>
-            {language === 'ar' ? `${order.items?.length || 0} منتج` : `${order.items?.length || 0} items`}
+          <Text style={[styles.orderDate, { color: colors.textSecondary }]}>
+            {formatDate(order.created_at)}
           </Text>
           <Text style={[styles.orderTotal, { color: colors.text }]}>
             {order.total?.toFixed(0)} ج.م
@@ -218,53 +210,56 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
     </View>
   ), [colors, language, isRTL, safeOrders.length]);
 
+  // List footer
+  const ListFooterComponent = useCallback(() => (
+    <View style={{ height: 100 }} />
+  ), []);
+
   // Empty state
   const ListEmptyComponent = useCallback(() => (
-    <EmptyState
-      icon="receipt-outline"
-      title={language === 'ar' ? 'لا توجد طلبات' : 'No orders yet'}
-    />
-  ), [language]);
+    <View style={[styles.emptyContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <EmptyState
+        icon="receipt-outline"
+        title={language === 'ar' ? 'لا توجد طلبات' : 'No orders yet'}
+      />
+    </View>
+  ), [language, colors]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {safeOrders.length === 0 ? (
-        <>
-          <ListHeaderComponent />
-          <ListEmptyComponent />
-        </>
-      ) : (
-        <View style={styles.listWrapper}>
-          <FlashList
-            data={safeOrders}
-            renderItem={renderOrderItem}
-            keyExtractor={(item, index) => item.id || `order-item-${index}`}
-            estimatedItemSize={140}
-            ListHeaderComponent={ListHeaderComponent}
-            scrollEnabled={false}
-            extraData={[colors, language, isRTL, canEditOrderStatus, updatingOrderId]}
+    <FlashList
+      data={safeOrders}
+      renderItem={renderOrderItem}
+      keyExtractor={(item, index) => item.id || `order-item-${index}`}
+      estimatedItemSize={100}
+      ListHeaderComponent={ListHeaderComponent}
+      ListFooterComponent={ListFooterComponent}
+      ListEmptyComponent={ListEmptyComponent}
+      contentContainerStyle={styles.listContainer}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={NEON_NIGHT_THEME.primary}
           />
-        </View>
-      )}
-    </View>
+        ) : undefined
+      }
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-  },
-  listWrapper: {
-    minHeight: 100,
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   rowReverse: {
     flexDirection: 'row-reverse',
@@ -283,66 +278,70 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  emptyContainer: {
+    marginTop: 8,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+  },
   orderCard: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
   },
   orderHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   orderNumber: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   statusText: {
     color: '#FFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-  },
-  orderDate: {
-    fontSize: 12,
-    marginBottom: 4,
   },
   orderDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  orderItems: {
-    fontSize: 13,
+  orderDate: {
+    fontSize: 12,
   },
   orderTotal: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   orderActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     marginTop: 10,
   },
   statusActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
   },
   statusActionText: {
     color: '#FFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
 });

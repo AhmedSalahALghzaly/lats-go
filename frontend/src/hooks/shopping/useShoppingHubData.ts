@@ -1,15 +1,13 @@
 /**
  * useShoppingHubData - Main data fetching and state management hook
- * REFACTORED: Uses React Query for data fetching with caching and optimistic updates
- * Handles loading data for both customer and admin views
+ * FIXED: Removed recursive state updates that caused infinite re-renders
+ * Uses React Query as the single source of truth for cart data
  */
 import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../../store/appStore';
 import {
   useShoppingHubQuery,
   useCustomerShoppingDataQuery,
-  useCartMutations,
-  useFavoritesMutations,
 } from '../queries';
 
 export interface ShoppingHubState {
@@ -28,7 +26,8 @@ export interface UseShoppingHubDataProps {
 }
 
 /**
- * Main hook for shopping hub data - uses React Query for all data fetching
+ * Main hook for shopping hub data - uses React Query as single source of truth
+ * FIXED: No longer syncs to Zustand from here to prevent infinite loops
  */
 export const useShoppingHubData = ({
   customerId,
@@ -36,7 +35,6 @@ export const useShoppingHubData = ({
   isAdminView,
 }: UseShoppingHubDataProps) => {
   const user = useAppStore((state) => state.user);
-  const setCartItems = useAppStore((state) => state.setCartItems);
 
   // Determine target user
   const targetUserId = customerId || user?.id;
@@ -106,19 +104,10 @@ export const useShoppingHubData = ({
     onRefresh();
   }, [onRefresh]);
 
-  // Update functions (for local state management if needed)
-  const setFavorites = useCallback((newFavorites: any[]) => {
-    // This is now handled by React Query
-    // Manual updates will be reflected after refetch
-  }, []);
-
-  const setLocalCartItems = useCallback((newCartItems: any[]) => {
-    setCartItems(newCartItems);
-  }, [setCartItems]);
-
-  const setOrders = useCallback((newOrders: any[]) => {
-    // This is now handled by React Query
-  }, []);
+  // Stub functions for backward compatibility - no longer needed
+  const setFavorites = useCallback(() => {}, []);
+  const setLocalCartItems = useCallback(() => {}, []);
+  const setOrders = useCallback(() => {}, []);
 
   return {
     loading,

@@ -2,9 +2,11 @@
  * Shopping Hub Query Hooks with React Query
  * Provides data fetching for cart, favorites, and orders
  * Uses centralized query keys for cache management
+ * 
+ * FIXED: Removed Zustand updates from queryFn to prevent infinite re-renders
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { cartApi, favoriteApi, orderApi } from '../../services/api';
 import api from '../../services/api';
@@ -59,18 +61,14 @@ export function useFavoritesQuery(enabled = true) {
 
 /**
  * Hook to fetch user's cart
+ * FIXED: Removed setCartItems from queryFn to prevent infinite re-renders
  */
 export function useCartQuery(enabled = true) {
-  const setCartItems = useAppStore((state) => state.setCartItems);
-
   return useQuery({
     queryKey: shoppingHubKeys.cart,
     queryFn: async () => {
       const response = await cartApi.get();
-      const items = response.data?.items || [];
-      // Sync with global store
-      setCartItems(items);
-      return items;
+      return response.data?.items || [];
     },
     enabled,
     staleTime: 60 * 1000, // 1 minute
@@ -150,6 +148,7 @@ export function useCustomerShoppingDataQuery(customerId: string | undefined, ena
 
 /**
  * Combined hook for shopping hub data (user's own data)
+ * FIXED: Returns data directly from React Query without Zustand sync in queryFn
  */
 export function useShoppingHubQuery(enabled = true) {
   const user = useAppStore((state) => state.user);
@@ -185,7 +184,6 @@ export function useShoppingHubQuery(enabled = true) {
  */
 export function useCartMutations() {
   const queryClient = useQueryClient();
-  const setCartItems = useAppStore((state) => state.setCartItems);
 
   const addToCart = useMutation({
     mutationFn: async (productId: string) => {
@@ -259,7 +257,6 @@ export function useCartMutations() {
     },
     onSuccess: () => {
       queryClient.setQueryData(shoppingHubKeys.cart, []);
-      setCartItems([]);
     },
   });
 

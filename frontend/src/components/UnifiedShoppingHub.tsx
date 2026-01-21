@@ -1,17 +1,7 @@
 /**
  * UnifiedShoppingHub - The Universal Shopping & Management Hub
- * REFACTORED VERSION - Modular architecture with separated concerns
- * 
- * This component now acts as a container that orchestrates:
- * - Tab navigation
- * - Data management through custom hooks
- * - Sub-component rendering
- * 
- * Key improvements:
- * - Reduced from 2000+ lines to ~350 lines
- * - Business logic extracted to custom hooks
- * - UI components extracted to dedicated files
- * - Improved testability and maintainability
+ * FIXED: Removed parent ScrollView causing FlashList scrolling issues
+ * FIXED: Removed Zustand sync useEffect causing infinite re-renders
  */
 import React, { useEffect, useRef, useCallback } from 'react';
 import {
@@ -79,10 +69,6 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
   onClose,
   initialTab = 'cart',
 }) => {
-  // ============================================================================
-  // Hooks
-  // ============================================================================
-  
   const { colors, isDark } = useTheme();
   const { language, isRTL } = useTranslation();
   const router = useRouter();
@@ -91,7 +77,6 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
   // Store hooks
   const user = useAppStore((state) => state.user);
   const userRole = useAppStore((state) => state.userRole);
-  const appCartItems = useAppStore((state) => state.cartItems);
 
   // Tab state
   const [activeTab, setActiveTab] = React.useState<TabKey>(initialTab);
@@ -104,7 +89,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
   // Custom Hooks for Business Logic
   // ============================================================================
 
-  // Data fetching and state management
+  // Data fetching and state management - React Query as source of truth
   const {
     loading,
     refreshing,
@@ -116,12 +101,9 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
     isOwnProfile,
     loadData,
     onRefresh,
-    setFavorites,
-    setLocalCartItems,
-    setOrders,
   } = useShoppingHubData({ customerId, customerData, isAdminView });
 
-  // Cart operations
+  // Cart operations - uses React Query data directly
   const {
     safeCartItems,
     updateCartQuantity,
@@ -133,7 +115,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
     getItemCount,
   } = useCartOperations({
     cartItems,
-    setLocalCartItems,
+    setLocalCartItems: () => {}, // No longer needed
     isAdminView,
     loadData,
   });
@@ -153,8 +135,8 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
     closeOrderConfirmation,
   } = useOrderOperations({
     cartItems: safeCartItems,
-    setLocalCartItems,
-    setOrders,
+    setLocalCartItems: () => {},
+    setOrders: () => {},
     customerId,
     isAdminView,
     language,
@@ -162,7 +144,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
 
   // Favorite operations
   const { toggleFavorite } = useFavoriteOperations({
-    setFavorites,
+    setFavorites: () => {},
     isAdminView,
   });
 
@@ -177,23 +159,6 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
       Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
     ]).start();
   }, [fadeAnim, slideAnim]);
-
-  // Sync local cart with global store
-  useEffect(() => {
-    if (!isAdminView && appCartItems.length > 0) {
-      setLocalCartItems(
-        appCartItems.map((item) => ({
-          product_id: item.productId || item.product_id,
-          quantity: item.quantity,
-          product: item.product,
-          original_unit_price: item.originalPrice || item.original_unit_price,
-          final_unit_price: item.discountedPrice || item.final_unit_price,
-          bundle_group_id: item.bundleGroupId || item.bundle_group_id,
-          discount_details: item.discount_details,
-        }))
-      );
-    }
-  }, [appCartItems, isAdminView, setLocalCartItems]);
 
   // Pre-fill checkout form when profile data is available
   useEffect(() => {
@@ -297,7 +262,7 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
   }
 
   // ============================================================================
-  // Main Render
+  // Main Render - FIXED: Removed parent ScrollView for tab content
   // ============================================================================
 
   return (
@@ -405,28 +370,31 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
         </ScrollView>
       </View>
 
-      {/* Content Area */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={NEON_NIGHT_THEME.primary}
-          />
-        }
-      >
+      {/* Content Area - FIXED: Each tab now handles its own scrolling */}
+      <View style={styles.content}>
         {/* Tab Content */}
         {activeTab === 'profile' && (
-          <ProfileTab
-            profileData={profileData}
-            ordersCount={safeOrders.length}
-            favoritesCount={safeFavorites.length}
-            cartItemsCount={getItemCount()}
-            isRTL={isRTL}
-          />
+          <ScrollView
+            style={styles.tabScrollView}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={NEON_NIGHT_THEME.primary}
+              />
+            }
+          >
+            <ProfileTab
+              profileData={profileData}
+              ordersCount={safeOrders.length}
+              favoritesCount={safeFavorites.length}
+              cartItemsCount={getItemCount()}
+              isRTL={isRTL}
+            />
+            <View style={{ height: 100 }} />
+          </ScrollView>
         )}
 
         {activeTab === 'favorites' && (
@@ -436,6 +404,8 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
             isAdminView={isAdminView}
             onAddToCart={handleAddFavoriteToCart}
             onToggleFavorite={toggleFavorite}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
           />
         )}
 
@@ -450,20 +420,29 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
             onUpdateQuantity={updateCartQuantity}
             onRemove={removeFromCart}
             onCheckout={() => setActiveTab('checkout')}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
           />
         )}
 
         {activeTab === 'checkout' && (
-          <CheckoutTab
-            checkoutForm={checkoutForm}
-            setCheckoutForm={setCheckoutForm}
-            submittingOrder={submittingOrder}
-            cartItemsCount={safeCartItems.length}
-            getSubtotal={getSubtotal}
-            getItemCount={getItemCount}
-            isRTL={isRTL}
-            onSubmitOrder={handleOrderSubmit}
-          />
+          <ScrollView
+            style={styles.tabScrollView}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <CheckoutTab
+              checkoutForm={checkoutForm}
+              setCheckoutForm={setCheckoutForm}
+              submittingOrder={submittingOrder}
+              cartItemsCount={safeCartItems.length}
+              getSubtotal={getSubtotal}
+              getItemCount={getItemCount}
+              isRTL={isRTL}
+              onSubmitOrder={handleOrderSubmit}
+            />
+            <View style={{ height: 100 }} />
+          </ScrollView>
         )}
 
         {activeTab === 'orders' && (
@@ -473,12 +452,11 @@ export const UnifiedShoppingHub: React.FC<UnifiedShoppingHubProps> = ({
             canEditOrderStatus={canEditOrderStatus}
             updatingOrderId={updatingOrderId}
             onUpdateStatus={handleUpdateOrderStatus}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
           />
         )}
-
-        {/* Bottom Spacing */}
-        <View style={{ height: 100 }} />
-      </ScrollView>
+      </View>
 
       {/* Order Confirmation Modal */}
       <OrderConfirmationModal
@@ -658,6 +636,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingTop: 4,
+  },
+  tabScrollView: {
+    flex: 1,
   },
 });
 
