@@ -88,3 +88,40 @@ async def get_customer_orders(customer_id: str, request: Request):
     
     orders = await db.orders.find({"user_id": customer_id, "deleted_at": None}).sort("created_at", -1).to_list(1000)
     return {"orders": [serialize_doc(o) for o in orders], "total": len(orders)}
+
+@router.patch("/admin/customer/{customer_id}/orders/mark-viewed")
+async def mark_customer_orders_viewed(customer_id: str, request: Request):
+    """Mark all customer orders as viewed by admin"""
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    from datetime import datetime, timezone
+    
+    result = await db.orders.update_many(
+        {"user_id": customer_id, "admin_viewed": {"$ne": True}},
+        {"$set": {"admin_viewed": True, "admin_viewed_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Orders marked as viewed", "modified_count": result.modified_count}
+
+@router.delete("/{customer_id}")
+async def delete_customer(customer_id: str, request: Request):
+    """Soft delete a customer"""
+    user = await get_current_user(request)
+    role = await get_user_role(user) if user else "guest"
+    if role not in ["owner", "partner"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    customer = await db.users.find_one({"_id": customer_id})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    from datetime import datetime, timezone
+    await db.users.update_one(
+        {"_id": customer_id},
+        {"$set": {"deleted_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Customer deleted"}
