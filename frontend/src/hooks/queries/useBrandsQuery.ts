@@ -20,7 +20,12 @@ export function useBrandsQuery() {
     queryKey: productBrandsKeys.all,
     queryFn: async () => {
       const response = await productBrandsApi.getAll();
-      return response.data || [];
+      // Map logo to image for consistent rendering
+      const brands = response.data || [];
+      return brands.map((brand: any) => ({
+        ...brand,
+        image: brand.image || brand.logo,
+      }));
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
