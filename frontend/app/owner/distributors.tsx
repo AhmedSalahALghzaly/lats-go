@@ -1,6 +1,7 @@
 /**
  * Distributors Management - Refactored with TanStack Query + FlashList
  * High-performance, stable architecture with optimistic updates
+ * FIXED: Hooks order issue - all hooks are called before any conditional returns
  */
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
@@ -366,6 +367,102 @@ export default function DistributorsScreen() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
+  // ============================================================================
+  // CRITICAL: All useCallback hooks must be defined BEFORE any conditional returns
+  // ============================================================================
+  
+  // List Header Component
+  const ListHeaderComponent = useCallback(() => (
+    <View>
+      {/* Header */}
+      <View style={[styles.listHeader, { paddingTop: insets.top }]}>
+        <View style={[styles.headerRow, isRTL && styles.headerRTL]}>
+          <TouchableOpacity 
+            style={[styles.backButton, { backgroundColor: colors.surface }]} 
+            onPress={() => router.back()}
+          >
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isRTL ? 'الموزعون' : 'Distributors'}
+          </Text>
+          {isOwnerOrAdmin && (
+            <TouchableOpacity 
+              style={[styles.addButton, { backgroundColor: colors.primary }]} 
+              onPress={() => setViewMode('add')}
+            >
+              <Ionicons name="add" size={24} color="#FFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Search Bar */}
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={isRTL ? 'ابحث عن موزع...' : 'Search distributors...'}
+            placeholderTextColor={colors.textSecondary}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Stats */}
+        <View style={[styles.statsCard, { backgroundColor: colors.primary }]}>
+          <Text style={styles.statsValue}>{filteredDistributors.length}</Text>
+          <Text style={styles.statsLabel}>
+            {isRTL ? 'إجمالي الموزعين' : 'Total Distributors'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  ), [insets.top, isRTL, colors, isOwnerOrAdmin, searchQuery, filteredDistributors.length, router]);
+
+  // Empty component
+  const ListEmptyComponent = useCallback(() => (
+    <View style={styles.emptyContainer}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color={colors.primary} />
+      ) : (
+        <>
+          <Ionicons name="storefront-outline" size={64} color={colors.textSecondary} />
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            {searchQuery 
+              ? (isRTL ? 'لا توجد نتائج' : 'No results found')
+              : (isRTL ? 'لا يوجد موزعون' : 'No distributors found')
+            }
+          </Text>
+        </>
+      )}
+    </View>
+  ), [isLoading, colors, searchQuery, isRTL]);
+
+  // Render item
+  const renderItem = useCallback(({ item }: { item: Distributor }) => (
+    <DistributorListItem
+      distributor={item}
+      colors={colors}
+      isRTL={isRTL}
+      language={language}
+      isOwnerOrAdmin={isOwnerOrAdmin}
+      onPress={openProfileMode}
+      onEdit={openEditMode}
+      onDelete={handleDeleteDistributor}
+    />
+  ), [colors, isRTL, language, isOwnerOrAdmin, openProfileMode, openEditMode, handleDeleteDistributor]);
+
+  const keyExtractor = useCallback((item: Distributor) => item.id, []);
+
+  // ============================================================================
+  // NOW we can have conditional returns (after all hooks are defined)
+  // ============================================================================
+
   // Profile View
   if (viewMode === 'profile' && selectedDistributor) {
     const linkedBrandObjects = productBrands.filter((b: any) => 
@@ -498,6 +595,13 @@ export default function DistributorsScreen() {
             </View>
           )}
         </ScrollView>
+
+        <Toast
+          visible={toastVisible}
+          message={toastMessage}
+          type={toastType}
+          onDismiss={() => setToastVisible(false)}
+        />
       </View>
     );
   }
@@ -691,97 +795,23 @@ export default function DistributorsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {error && (
+          <ErrorCapsule
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        )}
+
+        <Toast
+          visible={toastVisible}
+          message={toastMessage}
+          type={toastType}
+          onDismiss={() => setToastVisible(false)}
+        />
       </View>
     );
   }
-
-  // List Header Component
-  const ListHeaderComponent = useCallback(() => (
-    <View>
-      {/* Header */}
-      <View style={[styles.listHeader, { paddingTop: insets.top }]}>
-        <View style={[styles.headerRow, isRTL && styles.headerRTL]}>
-          <TouchableOpacity 
-            style={[styles.backButton, { backgroundColor: colors.surface }]} 
-            onPress={() => router.back()}
-          >
-            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {isRTL ? 'الموزعون' : 'Distributors'}
-          </Text>
-          {isOwnerOrAdmin && (
-            <TouchableOpacity 
-              style={[styles.addButton, { backgroundColor: colors.primary }]} 
-              onPress={() => setViewMode('add')}
-            >
-              <Ionicons name="add" size={24} color="#FFF" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Search Bar */}
-        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={isRTL ? 'ابحث عن موزع...' : 'Search distributors...'}
-            placeholderTextColor={colors.textSecondary}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Stats */}
-        <View style={[styles.statsCard, { backgroundColor: colors.primary }]}>
-          <Text style={styles.statsValue}>{filteredDistributors.length}</Text>
-          <Text style={styles.statsLabel}>
-            {isRTL ? 'إجمالي الموزعين' : 'Total Distributors'}
-          </Text>
-        </View>
-      </View>
-    </View>
-  ), [insets.top, isRTL, colors, isOwnerOrAdmin, searchQuery, filteredDistributors.length, router]);
-
-  // Empty component
-  const ListEmptyComponent = useCallback(() => (
-    <View style={styles.emptyContainer}>
-      {isLoading ? (
-        <ActivityIndicator size="large" color={colors.primary} />
-      ) : (
-        <>
-          <Ionicons name="storefront-outline" size={64} color={colors.textSecondary} />
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {searchQuery 
-              ? (isRTL ? 'لا توجد نتائج' : 'No results found')
-              : (isRTL ? 'لا يوجد موزعون' : 'No distributors found')
-            }
-          </Text>
-        </>
-      )}
-    </View>
-  ), [isLoading, colors, searchQuery, isRTL]);
-
-  // Render item
-  const renderItem = useCallback(({ item }: { item: Distributor }) => (
-    <DistributorListItem
-      distributor={item}
-      colors={colors}
-      isRTL={isRTL}
-      language={language}
-      isOwnerOrAdmin={isOwnerOrAdmin}
-      onPress={openProfileMode}
-      onEdit={openEditMode}
-      onDelete={handleDeleteDistributor}
-    />
-  ), [colors, isRTL, language, isOwnerOrAdmin, openProfileMode, openEditMode, handleDeleteDistributor]);
-
-  const keyExtractor = useCallback((item: Distributor) => item.id, []);
 
   // Main List View
   return (
