@@ -1,8 +1,8 @@
 /**
- * Car Brands Admin - Refactored with TanStack Query + FlashList
- * High-performance, stable architecture with optimistic updates
+ * Car Brands Admin - Refactored with standalone form component
+ * Fixes TextInput focus loss by extracting form outside FlashList
  */
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,9 @@ import {
   ActivityIndicator,
   Image,
   RefreshControl,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,219 +35,53 @@ interface CarBrand {
   logo?: string;
 }
 
-// Memoized Brand List Item Component
-const BrandListItem = React.memo(({
-  brand,
-  colors,
-  onEdit,
-  onDelete,
-}: {
-  brand: CarBrand;
+interface FormState {
+  name: string;
+  nameAr: string;
+  logoImage: string;
+  isEditMode: boolean;
+  editingBrand: CarBrand | null;
+  searchQuery: string;
+}
+
+interface FormHandlers {
+  setName: (v: string) => void;
+  setNameAr: (v: string) => void;
+  setLogoImage: (v: string) => void;
+  handleSave: () => void;
+  resetForm: () => void;
+  setSearchQuery: (v: string) => void;
+}
+
+interface FormHeaderProps {
+  formState: FormState;
+  handlers: FormHandlers;
   colors: any;
-  onEdit: (brand: CarBrand) => void;
-  onDelete: (id: string) => void;
-}) => (
-  <View style={[styles.listItem, { borderColor: colors.border }]}>
-    {brand.logo ? (
-      <Image source={{ uri: brand.logo }} style={styles.brandLogo} />
-    ) : (
-      <View style={[styles.brandLogoPlaceholder, { backgroundColor: colors.surface }]}>
-        <Ionicons name="car-sport" size={24} color={colors.textSecondary} />
-      </View>
-    )}
-    <View style={styles.brandInfo}>
-      <Text style={[styles.brandName, { color: colors.text }]}>{brand.name}</Text>
-      <Text style={[styles.brandNameAr, { color: colors.textSecondary }]}>{brand.name_ar}</Text>
-    </View>
-    <View style={styles.actionButtons}>
-      <TouchableOpacity
-        style={[styles.editButton, { backgroundColor: colors.primary + '20' }]}
-        onPress={() => onEdit(brand)}
-      >
-        <Ionicons name="create" size={18} color={colors.primary} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.deleteButton, { backgroundColor: colors.error + '20' }]}
-        onPress={() => onDelete(brand.id)}
-      >
-        <Ionicons name="trash" size={18} color={colors.error} />
-      </TouchableOpacity>
-    </View>
-  </View>
-));
+  language: string;
+  isRTL: boolean;
+  isSaving: boolean;
+  brandsCount: number;
+  router: any;
+}
 
-export default function CarBrandsAdmin() {
-  const { colors } = useTheme();
-  const { language, isRTL } = useTranslation();
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const adminSync = useAdminSync();
+// ============================================================================
+// Standalone Form Header Component - OUTSIDE main component to prevent re-mounting
+// ============================================================================
+const CarBrandFormHeader = memo(({
+  formState,
+  handlers,
+  colors,
+  language,
+  isRTL,
+  isSaving,
+  brandsCount,
+  router,
+}: FormHeaderProps) => {
+  const { name, nameAr, logoImage, isEditMode, searchQuery } = formState;
+  const { setName, setNameAr, setLogoImage, handleSave, resetForm, setSearchQuery } = handlers;
 
-  // Form state
-  const [name, setName] = useState('');
-  const [nameAr, setNameAr] = useState('');
-  const [logoImage, setLogoImage] = useState<string>('');
-
-  // Edit mode state
-  const [editingBrand, setEditingBrand] = useState<CarBrand | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Toast state
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
-
-  // TanStack Query: Fetch Brands
-  const {
-    data: brandsData,
-    isLoading,
-    isRefetching,
-    refetch,
-  } = useQuery({
-    queryKey: queryKeys.carBrands.all,
-    queryFn: async () => {
-      const response = await carBrandsApi.getAll();
-      return response.data || [];
-    },
-    staleTime: 2 * 60 * 1000,
-  });
-
-  const brands: CarBrand[] = brandsData || [];
-
-  // Filter brands based on search query
-  const filteredBrands = useMemo(() => {
-    if (!searchQuery.trim()) return brands;
-    const query = searchQuery.toLowerCase();
-    return brands.filter((brand) => {
-      const brandName = (brand.name || '').toLowerCase();
-      const brandNameAr = (brand.name_ar || '').toLowerCase();
-      return brandName.includes(query) || brandNameAr.includes(query);
-    });
-  }, [brands, searchQuery]);
-
-  // Create Mutation
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return adminSync.createCarBrand(data);
-    },
-    onSuccess: (result) => {
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.carBrands.all });
-        showToast(language === 'ar' ? 'تم إضافة الماركة بنجاح' : 'Brand created successfully', 'success');
-        resetForm();
-      } else {
-        showToast(result.error || 'Failed to create brand', 'error');
-      }
-    },
-    onError: (error: any) => {
-      showToast(error.message || 'Failed to create brand', 'error');
-    },
-  });
-
-  // Update Mutation (using direct API since adminSync doesn't have update for car brands)
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await carBrandsApi.update(id, data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.carBrands.all });
-      showToast(language === 'ar' ? 'تم تحديث الماركة بنجاح' : 'Brand updated successfully', 'success');
-      resetForm();
-    },
-    onError: (error: any) => {
-      showToast(error.message || 'Failed to update brand', 'error');
-    },
-  });
-
-  // Delete Mutation with Optimistic Update
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return adminSync.deleteCarBrand(id);
-    },
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.carBrands.all });
-      const previousBrands = queryClient.getQueryData(queryKeys.carBrands.all);
-
-      queryClient.setQueryData(queryKeys.carBrands.all, (old: CarBrand[] | undefined) =>
-        old ? old.filter(b => b.id !== deletedId) : []
-      );
-
-      return { previousBrands };
-    },
-    onSuccess: (result) => {
-      if (result.success) {
-        showToast(language === 'ar' ? 'تم حذف الماركة بنجاح' : 'Brand deleted successfully', 'success');
-      } else {
-        showToast(result.error || 'Failed to delete brand', 'error');
-        queryClient.invalidateQueries({ queryKey: queryKeys.carBrands.all });
-      }
-    },
-    onError: (error, variables, context) => {
-      if (context?.previousBrands) {
-        queryClient.setQueryData(queryKeys.carBrands.all, context.previousBrands);
-      }
-      showToast(language === 'ar' ? 'فشل في حذف الماركة' : 'Failed to delete brand', 'error');
-    },
-  });
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-    setToastVisible(true);
-  }, []);
-
-  const resetForm = useCallback(() => {
-    setName('');
-    setNameAr('');
-    setLogoImage('');
-    setIsEditMode(false);
-    setEditingBrand(null);
-  }, []);
-
-  const handleEditBrand = useCallback((brand: CarBrand) => {
-    setName(brand.name || '');
-    setNameAr(brand.name_ar || '');
-    setLogoImage(brand.logo || '');
-    setEditingBrand(brand);
-    setIsEditMode(true);
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    if (!name.trim() || !nameAr.trim()) {
-      showToast(language === 'ar' ? 'يرجى إدخال الاسم بالإنجليزية والعربية' : 'Please enter name in both languages', 'error');
-      return;
-    }
-
-    const brandData = {
-      name: name.trim(),
-      name_ar: nameAr.trim(),
-      logo: logoImage || undefined,
-    };
-
-    if (isEditMode && editingBrand) {
-      updateMutation.mutate({ id: editingBrand.id, data: brandData });
-    } else {
-      createMutation.mutate(brandData);
-    }
-  }, [name, nameAr, logoImage, isEditMode, editingBrand, language, showToast, createMutation, updateMutation]);
-
-  const handleDelete = useCallback((id: string) => {
-    deleteMutation.mutate(id);
-  }, [deleteMutation]);
-
-  const onRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
-
-  const isSaving = createMutation.isPending || updateMutation.isPending;
-
-  // List Header Component
-  const ListHeaderComponent = useCallback(() => (
-    <View>
+  return (
+    <View style={styles.listHeaderContainer}>
       {/* Breadcrumb */}
       <View style={[styles.breadcrumb, isRTL && styles.breadcrumbRTL]}>
         <TouchableOpacity onPress={() => router.push('/admin')}>
@@ -348,7 +180,7 @@ export default function CarBrandsAdmin() {
       {/* List Header */}
       <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.listTitle, { color: colors.text }]}>
-          {language === 'ar' ? 'الماركات الحالية' : 'Existing Brands'} ({filteredBrands.length})
+          {language === 'ar' ? 'الماركات الحالية' : 'Existing Brands'} ({brandsCount})
         </Text>
 
         {/* Search Bar */}
@@ -369,60 +201,285 @@ export default function CarBrandsAdmin() {
         </View>
       </View>
     </View>
-  ), [isRTL, colors, language, isEditMode, logoImage, name, nameAr, isSaving, filteredBrands.length, searchQuery, router, resetForm, handleSave]);
+  );
+});
 
-  // Empty component
-  const ListEmptyComponent = useCallback(() => (
-    <View style={styles.emptyContainer}>
-      {isLoading ? (
-        <ActivityIndicator size="large" color={colors.primary} />
-      ) : (
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          {searchQuery ? (language === 'ar' ? 'لا توجد نتائج' : 'No results found') : (language === 'ar' ? 'لا توجد ماركات' : 'No brands found')}
-        </Text>
-      )}
+CarBrandFormHeader.displayName = 'CarBrandFormHeader';
+
+// ============================================================================
+// Memoized Brand List Item Component
+// ============================================================================
+const BrandListItem = memo(({
+  brand,
+  colors,
+  onEdit,
+  onDelete,
+}: {
+  brand: CarBrand;
+  colors: any;
+  onEdit: (brand: CarBrand) => void;
+  onDelete: (id: string) => void;
+}) => (
+  <View style={[styles.listItem, { borderColor: colors.border }]}>
+    {brand.logo ? (
+      <Image source={{ uri: brand.logo }} style={styles.brandLogo} />
+    ) : (
+      <View style={[styles.brandLogoPlaceholder, { backgroundColor: colors.surface }]}>
+        <Ionicons name="car-sport" size={24} color={colors.textSecondary} />
+      </View>
+    )}
+    <View style={styles.brandInfo}>
+      <Text style={[styles.brandName, { color: colors.text }]}>{brand.name}</Text>
+      <Text style={[styles.brandNameAr, { color: colors.textSecondary }]}>{brand.name_ar}</Text>
     </View>
-  ), [isLoading, colors, searchQuery, language]);
+    <View style={styles.actionButtons}>
+      <TouchableOpacity
+        style={[styles.editButton, { backgroundColor: colors.primary + '20' }]}
+        onPress={() => onEdit(brand)}
+      >
+        <Ionicons name="create" size={18} color={colors.primary} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.deleteButton, { backgroundColor: colors.error + '20' }]}
+        onPress={() => onDelete(brand.id)}
+      >
+        <Ionicons name="trash" size={18} color={colors.error} />
+      </TouchableOpacity>
+    </View>
+  </View>
+));
 
-  // Render item
-  const renderItem = useCallback(({ item }: { item: CarBrand }) => (
-    <BrandListItem
-      brand={item}
-      colors={colors}
-      onEdit={handleEditBrand}
-      onDelete={handleDelete}
-    />
-  ), [colors, handleEditBrand, handleDelete]);
+BrandListItem.displayName = 'BrandListItem';
 
-  const keyExtractor = useCallback((item: CarBrand) => item.id, []);
+// ============================================================================
+// Main Component
+// ============================================================================
+export default function CarBrandsAdmin() {
+  const { colors } = useTheme();
+  const { language, isRTL } = useTranslation();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const adminSync = useAdminSync();
+  const insets = useSafeAreaInsets();
+
+  // Form state
+  const [name, setName] = useState('');
+  const [nameAr, setNameAr] = useState('');
+  const [logoImage, setLogoImage] = useState<string>('');
+  const [editingBrand, setEditingBrand] = useState<CarBrand | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+
+  // TanStack Query: Fetch Brands
+  const {
+    data: brandsData,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.carBrands.all,
+    queryFn: async () => {
+      const response = await carBrandsApi.getAll();
+      return response.data || [];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const brands: CarBrand[] = brandsData || [];
+
+  // Filter brands based on search query
+  const filteredBrands = useMemo(() => {
+    if (!searchQuery.trim()) return brands;
+    const query = searchQuery.toLowerCase();
+    return brands.filter((brand) => {
+      const brandName = (brand.name || '').toLowerCase();
+      const brandNameAr = (brand.name_ar || '').toLowerCase();
+      return brandName.includes(query) || brandNameAr.includes(query);
+    });
+  }, [brands, searchQuery]);
+
+  // Create Mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return adminSync.createCarBrand(data);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.carBrands.all });
+        showToast(language === 'ar' ? 'تم إضافة الماركة بنجاح' : 'Brand created successfully', 'success');
+        resetForm();
+      } else {
+        showToast(result.error || 'Failed to create brand', 'error');
+      }
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Failed to create brand', 'error');
+    },
+  });
+
+  // Update Mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await carBrandsApi.update(id, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.carBrands.all });
+      showToast(language === 'ar' ? 'تم تحديث الماركة بنجاح' : 'Brand updated successfully', 'success');
+      resetForm();
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Failed to update brand', 'error');
+    },
+  });
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return adminSync.deleteCarBrand(id);
+    },
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.carBrands.all });
+      const previousBrands = queryClient.getQueryData(queryKeys.carBrands.all);
+      queryClient.setQueryData(queryKeys.carBrands.all, (old: CarBrand[] | undefined) =>
+        old ? old.filter(b => b.id !== deletedId) : []
+      );
+      return { previousBrands };
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        showToast(language === 'ar' ? 'تم حذف الماركة بنجاح' : 'Brand deleted successfully', 'success');
+      } else {
+        showToast(result.error || 'Failed to delete brand', 'error');
+        queryClient.invalidateQueries({ queryKey: queryKeys.carBrands.all });
+      }
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousBrands) {
+        queryClient.setQueryData(queryKeys.carBrands.all, context.previousBrands);
+      }
+      showToast(language === 'ar' ? 'فشل في حذف الماركة' : 'Failed to delete brand', 'error');
+    },
+  });
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setName('');
+    setNameAr('');
+    setLogoImage('');
+    setIsEditMode(false);
+    setEditingBrand(null);
+  }, []);
+
+  const handleEditBrand = useCallback((brand: CarBrand) => {
+    setName(brand.name || '');
+    setNameAr(brand.name_ar || '');
+    setLogoImage(brand.logo || '');
+    setEditingBrand(brand);
+    setIsEditMode(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!name.trim() || !nameAr.trim()) {
+      showToast(language === 'ar' ? 'يرجى إدخال الاسم بالإنجليزية والعربية' : 'Please enter name in both languages', 'error');
+      return;
+    }
+
+    const brandData = {
+      name: name.trim(),
+      name_ar: nameAr.trim(),
+      logo: logoImage || undefined,
+    };
+
+    if (isEditMode && editingBrand) {
+      updateMutation.mutate({ id: editingBrand.id, data: brandData });
+    } else {
+      createMutation.mutate(brandData);
+    }
+  }, [name, nameAr, logoImage, isEditMode, editingBrand, language, showToast, createMutation, updateMutation]);
+
+  const handleDelete = useCallback((id: string) => {
+    deleteMutation.mutate(id);
+  }, [deleteMutation]);
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  // Form state object
+  const formState: FormState = useMemo(() => ({
+    name, nameAr, logoImage, isEditMode, editingBrand, searchQuery,
+  }), [name, nameAr, logoImage, isEditMode, editingBrand, searchQuery]);
+
+  // Form handlers object
+  const formHandlers: FormHandlers = useMemo(() => ({
+    setName, setNameAr, setLogoImage, handleSave, resetForm, setSearchQuery,
+  }), [handleSave, resetForm]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
       <Header title={language === 'ar' ? 'ماركات السيارات' : 'Car Brands'} showBack showSearch={false} showCart={false} />
 
-      <KeyboardAvoidingView 
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScrollView
+        style={styles.mainScrollView}
+        contentContainerStyle={styles.mainScrollContent}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
-        <FlashList
-          data={filteredBrands}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          estimatedItemSize={72}
-          ListHeaderComponent={ListHeaderComponent}
-          ListEmptyComponent={ListEmptyComponent}
-          contentContainerStyle={styles.listContentContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
-            />
-          }
-          extraData={[colors, language, searchQuery]}
-        />
-      </KeyboardAvoidingView>
+        {/* Form Section - OUTSIDE list to prevent focus loss */}
+        <View style={styles.formSection}>
+          <CarBrandFormHeader
+            formState={formState}
+            handlers={formHandlers}
+            colors={colors}
+            language={language}
+            isRTL={isRTL}
+            isSaving={isSaving}
+            brandsCount={filteredBrands.length}
+            router={router}
+          />
+        </View>
+
+        {/* Brands List Section - Using map() since form is outside */}
+        <View style={styles.brandsListContainer}>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : filteredBrands.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="car-sport-outline" size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {searchQuery ? (language === 'ar' ? 'لا توجد نتائج' : 'No results found') : (language === 'ar' ? 'لا توجد ماركات' : 'No brands found')}
+              </Text>
+            </View>
+          ) : (
+            <View>
+              {filteredBrands.map((brand: CarBrand) => (
+                <BrandListItem
+                  key={brand.id}
+                  brand={brand}
+                  colors={colors}
+                  onEdit={handleEditBrand}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+        
+        <View style={{ height: insets.bottom + 40 }} />
+      </ScrollView>
       
       <Toast
         visible={toastVisible}
@@ -436,8 +493,13 @@ export default function CarBrandsAdmin() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  keyboardView: { flex: 1 },
-  listContentContainer: { padding: 16 },
+  mainScrollView: { flex: 1 },
+  mainScrollContent: { paddingHorizontal: 16 },
+  formSection: { paddingTop: 16 },
+  brandsListContainer: { flex: 1 },
+  loadingContainer: { padding: 40, alignItems: 'center' },
+  emptyContainer: { padding: 40, alignItems: 'center' },
+  listHeaderContainer: {},
   breadcrumb: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 },
   breadcrumbRTL: { flexDirection: 'row-reverse' },
   breadcrumbText: { fontSize: 14 },
@@ -452,25 +514,11 @@ const styles = StyleSheet.create({
   inputRTL: { textAlign: 'right' },
   saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 8, gap: 8 },
   saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  listCard: { borderRadius: 12, borderWidth: 1, padding: 16 },
+  listCard: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 8 },
   listTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 16,
-    gap: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    paddingVertical: 0,
-  },
-  emptyContainer: { alignItems: 'center', padding: 40 },
-  emptyText: { textAlign: 'center', fontSize: 15 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, gap: 10 },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
+  emptyText: { textAlign: 'center', marginTop: 12, fontSize: 15 },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
   brandLogo: { width: 48, height: 48, borderRadius: 8 },
   brandLogoPlaceholder: { width: 48, height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
