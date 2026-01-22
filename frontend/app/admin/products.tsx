@@ -949,30 +949,6 @@ export default function ProductsAdmin() {
   // Footer component
   const ListFooterComponent = useCallback(() => <View style={{ height: insets.bottom + 40 }} />, [insets.bottom]);
 
-  // List header - only contains search and title, NOT the form
-  const ListHeader = useCallback(() => (
-    <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.listTitle, { color: colors.text }]}>
-        {language === 'ar' ? 'المنتجات الحالية' : 'Existing Products'} ({products.length})
-      </Text>
-      <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="search" size={20} color={colors.textSecondary} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder={language === 'ar' ? 'ابحث بالاسم أو رمز SKU...' : 'Search by name or SKU...'}
-          placeholderTextColor={colors.textSecondary}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  ), [colors, language, products.length, searchQuery]);
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
       <Header title={language === 'ar' ? 'المنتجات' : 'Products'} showBack showSearch={false} showCart={false} />
