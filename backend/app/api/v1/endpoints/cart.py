@@ -225,7 +225,7 @@ async def remove_from_cart(product_id: str, request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    result = await db.carts.update_one(
+    await db.carts.update_one(
         {"user_id": user["id"]},
         {
             "$pull": {"items": {"product_id": product_id}},
