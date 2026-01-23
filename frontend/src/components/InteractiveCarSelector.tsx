@@ -632,38 +632,30 @@ export const InteractiveCarSelector: React.FC = () => {
     transform: [{ translateY: productsSlideAnim.value }],
   }));
 
-  // Grid item component with animations
+  // Grid Item Component - Simplified for mobile stability
   const GridItem = ({ item, index, isBrand }: { item: CarBrand | CarModel; index: number; isBrand: boolean }) => {
     const itemScale = useSharedValue(1);
-    const glowAnim = useSharedValue(0);
-    
+
     const itemAnimatedStyle = useAnimatedStyle(() => ({
       transform: [{ scale: itemScale.value }],
     }));
 
-    const itemGlowStyle = useAnimatedStyle(() => ({
-      shadowOpacity: interpolate(glowAnim.value, [0, 1], [0, 0.6]),
-      shadowRadius: interpolate(glowAnim.value, [0, 1], [0, 12]),
-    }));
-
-    const handlePress = () => {
+    const handlePress = useCallback(() => {
       triggerHaptic('selection');
       itemScale.value = withSequence(
-        withSpring(0.9, { damping: 10, stiffness: 400 }),
-        withSpring(1.05, { damping: 8, stiffness: 300 }),
+        withSpring(0.95, { damping: 15, stiffness: 300 }),
         withSpring(1, { damping: 12, stiffness: 200 })
       );
-      glowAnim.value = withSequence(
-        withTiming(1, { duration: 150 }),
-        withTiming(0, { duration: 300 })
-      );
       
-      setTimeout(() => {
-        isBrand
-          ? handleBrandSelect(item as CarBrand)
-          : handleModelSelect(item as CarModel);
-      }, 100);
-    };
+      // Use requestAnimationFrame for smoother navigation
+      requestAnimationFrame(() => {
+        if (isBrand) {
+          handleBrandSelect(item as CarBrand);
+        } else {
+          handleModelSelect(item as CarModel);
+        }
+      });
+    }, [isBrand, item, itemScale, triggerHaptic]);
 
     const brand = item as CarBrand;
     const model = item as CarModel;
@@ -671,9 +663,8 @@ export const InteractiveCarSelector: React.FC = () => {
 
     return (
       <Animated.View
-        entering={FadeIn.delay(index * 60).duration(300).springify()}
-        layout={Layout.springify()}
-        style={[itemAnimatedStyle, itemGlowStyle]}
+        entering={FadeIn.delay(Math.min(index * 40, 200)).duration(200)}
+        style={itemAnimatedStyle}
       >
         <TouchableOpacity
           style={[
@@ -681,11 +672,11 @@ export const InteractiveCarSelector: React.FC = () => {
             {
               backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
               borderColor: mood?.primary + '40',
-              shadowColor: mood?.primary || colors.primary,
             },
           ]}
           onPress={handlePress}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
+          delayPressIn={0}
         >
           {hasImage ? (
             <Image
