@@ -187,6 +187,21 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const handleAddToCart = useCallback(async () => {
     if (!onAddToCart) return;
     
+    // Check if product already exists in cart as bundle item
+    if (checkBundleDuplicate(product.id)) {
+      // Haptic feedback for warning
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
+      Alert.alert(
+        language === 'ar' ? 'تنبيه' : 'Notice',
+        'عرض المنتج تم اضافته بالفعل',
+        [{ text: language === 'ar' ? 'حسناً' : 'OK', style: 'default' }],
+        { cancelable: true }
+      );
+      return;
+    }
+    
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
@@ -203,7 +218,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     } finally {
       setCartLoading(false);
     }
-  }, [onAddToCart, quantity]);
+  }, [onAddToCart, quantity, checkBundleDuplicate, product.id, language]);
 
   const handleIncreaseQuantity = useCallback(() => {
     if (Platform.OS !== 'web') {
