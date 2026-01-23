@@ -4,7 +4,7 @@
  * Image-based selection, advanced animations with react-native-reanimated
  * NEW: Dual selector buttons - Choose Your Car & Chassis Number Search
  */
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
