@@ -541,40 +541,25 @@ export const InteractiveCarSelector: React.FC = () => {
     transform: [{ translateY: productsSlideAnim.value }],
   }));
 
-  // Grid Item Component - Simplified for mobile stability
+  // Grid Item Component - Static for mobile stability (NO ANIMATIONS)
   const GridItem = ({ item, index, isBrand }: { item: CarBrand | CarModel; index: number; isBrand: boolean }) => {
-    const itemScale = useSharedValue(1);
-
-    const itemAnimatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: itemScale.value }],
-    }));
-
     const handlePress = useCallback(() => {
       triggerHaptic('selection');
-      itemScale.value = withSequence(
-        withSpring(0.95, { damping: 15, stiffness: 300 }),
-        withSpring(1, { damping: 12, stiffness: 200 })
-      );
       
-      // Use requestAnimationFrame for smoother navigation
-      requestAnimationFrame(() => {
-        if (isBrand) {
-          handleBrandSelect(item as CarBrand);
-        } else {
-          handleModelSelect(item as CarModel);
-        }
-      });
-    }, [isBrand, item, itemScale, triggerHaptic]);
+      // Direct navigation - no animations
+      if (isBrand) {
+        handleBrandSelect(item as CarBrand);
+      } else {
+        handleModelSelect(item as CarModel);
+      }
+    }, [isBrand, item]);
 
     const brand = item as CarBrand;
     const model = item as CarModel;
     const hasImage = isBrand ? (brand.logo_url || brand.logo) : model.image_url;
 
     return (
-      <Animated.View
-        entering={FadeIn.delay(Math.min(index * 40, 200)).duration(200)}
-        style={itemAnimatedStyle}
-      >
+      <View style={{ opacity: 1 }}>
         <TouchableOpacity
           style={[
             styles.gridItem,
@@ -584,8 +569,7 @@ export const InteractiveCarSelector: React.FC = () => {
             },
           ]}
           onPress={handlePress}
-          activeOpacity={0.7}
-          delayPressIn={0}
+          activeOpacity={0.6}
         >
           {hasImage ? (
             <Image
@@ -616,7 +600,7 @@ export const InteractiveCarSelector: React.FC = () => {
             </Text>
           )}
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     );
   };
 
