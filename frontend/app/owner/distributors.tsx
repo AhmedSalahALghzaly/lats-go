@@ -182,6 +182,7 @@ export default function DistributorsScreen() {
   const queryClient = useQueryClient();
   const language = useAppStore((state) => state.language);
   const productBrands = useAppStore((state) => state.productBrands);
+  const carBrands = useAppStore((state) => state.carBrands); // Distributors link to car brands
   const user = useAppStore((state) => state.user);
   const userRole = useAppStore((state) => state.userRole);
   const subscriptionStatus = useAppStore((state) => state.subscriptionStatus);
