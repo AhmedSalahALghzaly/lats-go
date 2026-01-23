@@ -253,10 +253,9 @@ export const InteractiveCarSelector: React.FC = () => {
   const [chassisSearchQuery, setChassisSearchQuery] = useState('');
   const [priceFilter, setPriceFilter] = useState<PriceFilter>('all');
   
-  // Morphing icon state - use refs to avoid re-renders from setInterval
+  // Morphing icon state
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [currentVinIndex, setCurrentVinIndex] = useState(0);
-  const isMountedRef = useRef(true);
 
   // Animations
   const expandAnim = useSharedValue(0);
