@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ import { useAppStore } from '../../src/store/appStore';
 import { carModelsApi, cartApi } from '../../src/services/api';
 import { useCartMutations, shoppingHubKeys } from '../../src/hooks/queries/useShoppingHubQuery';
 import { useQueryClient } from '@tanstack/react-query';
+import { AnimatedCartButton, AnimatedCartButtonRef } from '../../src/components/AnimatedIconButton';
 
 const GOLD_COLOR = '#FFD700';
 
