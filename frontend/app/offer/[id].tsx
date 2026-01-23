@@ -97,6 +97,18 @@ export default function OfferDetailsScreen() {
   const rgbAnim = useRef(new Animated.Value(0)).current;
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set());
+  
+  // Refs for cart buttons to trigger shake animation - using Map for dynamic product refs
+  const cartButtonRefs = useRef<Map<string, AnimatedCartButtonRef>>(new Map());
+  
+  // Callback to set ref for each product
+  const setCartButtonRef = useCallback((productId: string, ref: AnimatedCartButtonRef | null) => {
+    if (ref) {
+      cartButtonRefs.current.set(productId, ref);
+    } else {
+      cartButtonRefs.current.delete(productId);
+    }
+  }, []);
 
   // Fetch bundle offer from API
   useEffect(() => {
