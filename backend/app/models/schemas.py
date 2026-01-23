@@ -139,6 +139,7 @@ class SupplierCreate(BaseModel):
     name_ar: Optional[str] = None
     profile_image: Optional[str] = None
     phone_numbers: List[str] = []
+    contact_email: Optional[str] = None
     address: Optional[str] = None
     address_ar: Optional[str] = None
     description: Optional[str] = None
@@ -152,6 +153,7 @@ class DistributorCreate(BaseModel):
     name_ar: Optional[str] = None
     profile_image: Optional[str] = None
     phone_numbers: List[str] = []
+    contact_email: Optional[str] = None
     address: Optional[str] = None
     address_ar: Optional[str] = None
     description: Optional[str] = None
