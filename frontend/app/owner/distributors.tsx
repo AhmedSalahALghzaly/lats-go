@@ -59,17 +59,23 @@ interface Distributor {
   id: string;
   name: string;
   name_ar?: string;
+  // Backend uses phone_numbers array, but we also handle legacy 'phone' field
   phone?: string;
+  phone_numbers?: string[];
   address?: string;
   address_ar?: string;
   description?: string;
   description_ar?: string;
+  // Backend uses website_url, but we also handle legacy 'website' field
   website?: string;
+  website_url?: string;
   contact_email?: string;
   profile_image?: string;
   images?: string[];
   slider_images?: string[];
   linked_brands?: string[];
+  // Distributors link to car brands, not product brands
+  linked_car_brand_ids?: string[];
   linked_product_brand_ids?: string[];
   regions?: string[];
   performance_rating?: number;
