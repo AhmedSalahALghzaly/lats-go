@@ -376,6 +376,18 @@ export default function ProductDetailScreen() {
             <Ionicons name="cube-outline" size={100} color={colors.textSecondary} />
           )}
           
+          {/* Golden Gift Icon for Bundle Products */}
+          {isInBundle && (
+            <View style={styles.bundleIconContainer}>
+              <View style={styles.bundleIconBadge}>
+                <Ionicons name="gift" size={18} color="#FFD700" />
+              </View>
+              <Text style={styles.bundleLabel}>
+                {language === 'ar' ? 'عرض خاص' : 'Bundle'}
+              </Text>
+            </View>
+          )}
+          
           {/* Favorite Button */}
           <View style={[styles.favoriteButton, { backgroundColor: 'transparent' }]}>
             <AnimatedFavoriteButton
