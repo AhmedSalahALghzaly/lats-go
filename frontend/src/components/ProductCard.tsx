@@ -56,8 +56,11 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const { isProductInBundle } = useBundleProducts();
   const isInBundle = useMemo(() => isProductInBundle(product.id), [product.id, isProductInBundle]);
   
-  // Cart mutations for duplicate checking
-  const { checkBundleDuplicate } = useCartMutations();
+  // Cart mutations for bidirectional duplicate checking
+  const { checkDuplicate, checkBundleDuplicate } = useCartMutations();
+  
+  // Ref for AnimatedCartButton to trigger shake animation
+  const cartButtonRef = useRef<AnimatedCartButtonRef>(null);
   
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
