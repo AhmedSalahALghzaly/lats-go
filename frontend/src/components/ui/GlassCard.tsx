@@ -1,6 +1,7 @@
 /**
  * GlassCard - Glassmorphism styled card container with BlurView
  * Reusable component with theme support and frosted glass effect
+ * Updated for 2026 standards with boxShadow support
  */
 import React from 'react';
 import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
@@ -13,6 +14,22 @@ interface GlassCardProps {
   intensity?: number;
   tint?: 'light' | 'dark' | 'default';
 }
+
+// Cross-platform shadow style
+const getCardShadow = (): ViewStyle => {
+  if (Platform.OS === 'web') {
+    return {
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    } as ViewStyle;
+  }
+  return {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  };
+};
 
 export const GlassCard: React.FC<GlassCardProps> = ({ 
   children, 
@@ -31,6 +48,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       <View
         style={[
           styles.glassCard,
+          getCardShadow(),
           {
             backgroundColor: isDark
               ? 'rgba(30, 41, 59, 0.85)'
@@ -46,7 +64,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   }
 
   return (
-    <View style={[styles.glassCard, style]}>
+    <View style={[styles.glassCard, getCardShadow(), style]}>
       <BlurView
         intensity={intensity}
         tint={blurTint}
@@ -72,11 +90,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginHorizontal: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   glassContent: {
     padding: 16,
