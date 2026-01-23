@@ -111,6 +111,8 @@ const DistributorListItem = React.memo(({
   onRestrictedPress: () => void;
 }) => {
   const displayName = isRTL && distributor.name_ar ? distributor.name_ar : distributor.name;
+  // Get first phone number from array or fallback to legacy phone field
+  const displayPhone = distributor.phone_numbers?.[0] || distributor.phone;
   
   const handlePress = () => {
     if (canViewProfile) {
