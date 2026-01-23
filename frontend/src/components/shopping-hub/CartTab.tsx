@@ -269,22 +269,32 @@ export const CartTab: React.FC<CartTabProps> = ({
 
         {/* Actions Section */}
         <View style={styles.actionsSection}>
-          {/* Quantity Controls */}
-          <View style={[styles.quantityControls, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Pressable
-              style={[styles.qtyBtn, { backgroundColor: colors.card }]}
-              onPress={() => handleQuantityUpdate(item.product_id, item.quantity - 1)}
-            >
-              <Ionicons name="remove" size={16} color={colors.text} />
-            </Pressable>
-            <Text style={[styles.qtyText, { color: colors.text }]}>{item.quantity}</Text>
-            <Pressable
-              style={[styles.qtyBtn, { backgroundColor: colors.card }]}
-              onPress={() => handleQuantityUpdate(item.product_id, item.quantity + 1)}
-            >
-              <Ionicons name="add" size={16} color={colors.text} />
-            </Pressable>
-          </View>
+          {/* Quantity Controls - Hide for bundle items */}
+          {!item.bundle_group_id ? (
+            <View style={[styles.quantityControls, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Pressable
+                style={[styles.qtyBtn, { backgroundColor: colors.card }]}
+                onPress={() => handleQuantityUpdate(item.product_id, item.quantity - 1)}
+              >
+                <Ionicons name="remove" size={16} color={colors.text} />
+              </Pressable>
+              <Text style={[styles.qtyText, { color: colors.text }]}>{item.quantity}</Text>
+              <Pressable
+                style={[styles.qtyBtn, { backgroundColor: colors.card }]}
+                onPress={() => handleQuantityUpdate(item.product_id, item.quantity + 1)}
+              >
+                <Ionicons name="add" size={16} color={colors.text} />
+              </Pressable>
+            </View>
+          ) : (
+            // Bundle item - show locked indicator instead of quantity controls
+            <View style={[styles.bundleLockedIndicator, { backgroundColor: '#FFD700' + '20', borderColor: '#FFD700' }]}>
+              <Ionicons name="gift" size={14} color="#FFD700" />
+              <Text style={[styles.bundleLockedText, { color: '#FFD700' }]}>
+                {language === 'ar' ? 'عرض خاص' : 'Bundle'}
+              </Text>
+            </View>
+          )}
 
           {/* Remove Button - Now triggers modal */}
           <Pressable
