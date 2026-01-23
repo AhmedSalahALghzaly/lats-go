@@ -307,19 +307,15 @@ export const InteractiveCarSelector: React.FC = () => {
   // Morphing vehicle icon animation - cycle through vehicle types
   useEffect(() => {
     let morphInterval: ReturnType<typeof setInterval> | null = null;
-    isMountedRef.current = true;
     
+    // Only run animations when collapsed
     if (selectorState === 'collapsed') {
+      // Start icon morphing
       morphInterval = setInterval(() => {
-        if (isMountedRef.current) {
-          setCurrentIconIndex((prev) => (prev + 1) % VEHICLE_ICONS.length);
-          morphProgress.value = withSequence(
-            withTiming(1, { duration: 150 }),
-            withTiming(0, { duration: 150 })
-          );
-        }
-      }, 2000);
+        setCurrentIconIndex((prev) => (prev + 1) % VEHICLE_ICONS.length);
+      }, 2500);
       
+      // Glow animation
       carIconGlow.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 1500 }),
@@ -330,12 +326,13 @@ export const InteractiveCarSelector: React.FC = () => {
       );
     } else {
       cancelAnimation(carIconGlow);
-      carIconGlow.value = withTiming(0.8, { duration: 300 });
+      carIconGlow.value = 0.8;
     }
     
     return () => {
-      isMountedRef.current = false;
-      if (morphInterval) clearInterval(morphInterval);
+      if (morphInterval) {
+        clearInterval(morphInterval);
+      }
     };
   }, [selectorState]);
 
