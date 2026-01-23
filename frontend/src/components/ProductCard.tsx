@@ -510,12 +510,19 @@ const styles = StyleSheet.create({
     borderColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
-    // Shadow for premium effect
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    // Shadow for premium effect (cross-platform)
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 4px rgba(255, 215, 0, 0.3)',
+      },
+      default: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+      },
+    }),
   },
   brandBadge: {
     position: 'absolute',
