@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,7 @@ import { useAppStore } from '../store/appStore';
 import { favoritesApi } from '../services/api';
 import { AnimatedFavoriteButton, AnimatedCartButton } from './AnimatedIconButton';
 import { useBundleProducts } from '../hooks/queries/useBundleProducts';
+import { useCartMutations } from '../hooks/queries/useShoppingHubQuery';
 import * as Haptics from 'expo-haptics';
 
 interface ProductCardProps {
