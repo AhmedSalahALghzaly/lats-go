@@ -603,9 +603,18 @@ export const AnimatedCartButton = React.forwardRef<
           {
             transform: [
               { scale: isInCart ? successPulse : scaleAnim },
-              { rotate: rotateAnim.interpolate({
-                inputRange: [-15, 15],
-                outputRange: ['-15deg', '15deg'],
+              { rotate: Animated.add(
+                rotateAnim.interpolate({
+                  inputRange: [-15, 15],
+                  outputRange: [-15, 15],
+                }),
+                shakeAnim.interpolate({
+                  inputRange: [-1, 0, 1],
+                  outputRange: [-15, 0, 15],
+                })
+              ).interpolate({
+                inputRange: [-30, 30],
+                outputRange: ['-30deg', '30deg'],
               }) },
             ],
           },
