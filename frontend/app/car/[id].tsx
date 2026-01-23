@@ -233,7 +233,7 @@ export default function CarModelDetailScreen() {
     return language === 'ar' && item?.[arField] ? item[arField] : item?.[field] || '';
   };
 
-  const handleAddToCart = async (product: any) => {
+  const handleAddToCart = useCallback(async (product: any) => {
     if (!user) {
       router.push('/login');
       return;
@@ -241,6 +241,12 @@ export default function CarModelDetailScreen() {
 
     // BIDIRECTIONAL: Check if product already exists in cart (as bundle OR normal item)
     if (checkDuplicate(product.id)) {
+      // Trigger shake animation on cart button
+      const buttonRef = cartButtonRefs.current.get(product.id);
+      if (buttonRef) {
+        buttonRef.triggerShake();
+      }
+      
       // Haptic feedback for warning
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -254,20 +260,26 @@ export default function CarModelDetailScreen() {
       return;
     }
 
+    setAddingProductId(product.id);
     try {
       await cartApi.addItem(product.id, 1);
       // Invalidate cart query for real-time sync
       queryClient.invalidateQueries({ queryKey: shoppingHubKeys.cart });
       addToLocalCart({ product_id: product.id, quantity: 1, product });
       
+      // Mark product as added for checkmark display
+      setAddedProducts(prev => new Set(prev).add(product.id));
+      
       // Success feedback
       if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
+    } finally {
+      setAddingProductId(null);
     }
-  };
+  }, [user, router, checkDuplicate, language, queryClient, addToLocalCart]);
 
   if (loading) {
     return (
