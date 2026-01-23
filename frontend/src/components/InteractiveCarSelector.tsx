@@ -305,7 +305,7 @@ export const InteractiveCarSelector: React.FC = () => {
 
   // Morphing vehicle icon animation - cycle through vehicle types
   useEffect(() => {
-    let morphInterval: NodeJS.Timeout;
+    let morphInterval: ReturnType<typeof setInterval> | null = null;
     
     if (selectorState === 'collapsed') {
       morphInterval = setInterval(() => {
@@ -332,7 +332,7 @@ export const InteractiveCarSelector: React.FC = () => {
     return () => {
       if (morphInterval) clearInterval(morphInterval);
     };
-  }, [selectorState]);
+  }, [selectorState, morphProgress, carIconGlow]);
 
   // Chassis number animation - shifting VIN characters with electric blue glow
   useEffect(() => {
