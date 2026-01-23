@@ -628,7 +628,10 @@ export const AnimatedCartButton = React.forwardRef<
       </Animated.View>
     </TouchableOpacity>
   );
-};
+});
+
+// Display name for debugging
+AnimatedCartButton.displayName = 'AnimatedCartButton';
 
 const styles = StyleSheet.create({
   button: {
