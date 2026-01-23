@@ -405,7 +405,7 @@ export const InteractiveCarSelector: React.FC = () => {
     return () => {
       if (vinInterval) clearInterval(vinInterval);
     };
-  }, [selectorState, vinShiftAnim, chassisIconGlow, barcodeScanAnim, chassisPulseAnim, chassisGlowIntensity]);
+  }, [selectorState]);
 
   // Expand animation with Glassmorphism
   useEffect(() => {
