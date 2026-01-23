@@ -585,10 +585,15 @@ export default function SuppliersScreen() {
               {isRTL ? 'معلومات التواصل' : 'Contact Information'}
             </Text>
             
-            {selectedSupplier.phone && (
+            {/* Render all phone numbers from the array */}
+            {(selectedSupplier.phone_numbers && selectedSupplier.phone_numbers.length > 0 ? 
+              selectedSupplier.phone_numbers : 
+              (selectedSupplier.phone ? [selectedSupplier.phone] : [])
+            ).map((phone, index) => (
               <TouchableOpacity
+                key={`phone-${index}`}
                 style={[styles.contactCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => Linking.openURL(`tel:${selectedSupplier.phone}`)}
+                onPress={() => Linking.openURL(`tel:${phone}`)}
                 activeOpacity={0.7}
               >
                 <View style={[styles.contactIconContainer, { backgroundColor: LUMINOUS_BLUE + '20' }]}>
@@ -596,15 +601,15 @@ export default function SuppliersScreen() {
                 </View>
                 <View style={styles.contactTextContainer}>
                   <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>
-                    {isRTL ? 'الهاتف' : 'Phone'}
+                    {isRTL ? `الهاتف ${selectedSupplier.phone_numbers && selectedSupplier.phone_numbers.length > 1 ? index + 1 : ''}` : `Phone ${selectedSupplier.phone_numbers && selectedSupplier.phone_numbers.length > 1 ? index + 1 : ''}`}
                   </Text>
                   <Text style={[styles.contactValue, { color: LUMINOUS_BLUE }]}>
-                    {selectedSupplier.phone}
+                    {phone}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={LUMINOUS_BLUE} />
               </TouchableOpacity>
-            )}
+            ))}
 
             {selectedSupplier.contact_email && (
               <TouchableOpacity
@@ -627,10 +632,14 @@ export default function SuppliersScreen() {
               </TouchableOpacity>
             )}
 
-            {selectedSupplier.website && (
+            {/* Handle both website_url (backend) and website (legacy) */}
+            {(selectedSupplier.website_url || selectedSupplier.website) && (
               <TouchableOpacity
                 style={[styles.contactCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => Linking.openURL(selectedSupplier.website!.startsWith('http') ? selectedSupplier.website! : `https://${selectedSupplier.website}`)}
+                onPress={() => {
+                  const url = selectedSupplier.website_url || selectedSupplier.website || '';
+                  Linking.openURL(url.startsWith('http') ? url : `https://${url}`);
+                }}
                 activeOpacity={0.7}
               >
                 <View style={[styles.contactIconContainer, { backgroundColor: LUMINOUS_BLUE + '20' }]}>
@@ -641,7 +650,7 @@ export default function SuppliersScreen() {
                     {isRTL ? 'الموقع الإلكتروني' : 'Website'}
                   </Text>
                   <Text style={[styles.contactValue, { color: LUMINOUS_BLUE }]} numberOfLines={1}>
-                    {selectedSupplier.website}
+                    {selectedSupplier.website_url || selectedSupplier.website}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={LUMINOUS_BLUE} />
