@@ -72,6 +72,10 @@ export default function OfferDetailsScreen() {
   const { user } = useAppStore();
   const { addBundleToCart, addToCart } = useCartStore();
 
+  // Cart mutations with duplicate prevention
+  const queryClient = useQueryClient();
+  const { checkBundleDuplicate } = useCartMutations();
+
   // Bundle offer data from API
   const [offer, setOffer] = useState<BundleOffer | null>(null);
   const [carModel, setCarModel] = useState<any>(null);
