@@ -1,9 +1,14 @@
 /**
  * Home Screen Query Hook with React Query
  * Provides data fetching for the home screen with caching and parallel loading
+ * 
+ * ARCHITECTURE: Offline-First with Zustand Persistence
+ * - React Query handles network requests and caching
+ * - Zustand stores data for offline access
+ * - Sync happens in queryFn (NOT in useEffect) to prevent render loops
  */
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef } from 'react';
 import {
   categoriesApi,
   carBrandsApi,
@@ -27,25 +32,58 @@ export const homeScreenKeys = {
   banners: ['homeScreen', 'banners'] as const,
 };
 
+// Stable reference to store setters (prevents re-render loops)
+const getStoreSetters = () => {
+  const state = useAppStore.getState();
+  return {
+    setCategories: state.setCategories,
+    setCarBrands: state.setCarBrands,
+    setCarModels: state.setCarModels,
+    setProductBrands: state.setProductBrands,
+    setProducts: state.setProducts,
+  };
+};
+
 /**
  * Hook to fetch all home screen data in parallel
+ * 
+ * STABILITY FIX: 
+ * - Removed all useEffect-based sync to Zustand
+ * - Sync now happens inside queryFn after successful fetch
+ * - This prevents the render-cycle dependency that caused "Maximum update depth exceeded"
  */
 export function useHomeScreenQuery() {
   const user = useAppStore((state) => state.user);
-  const setGlobalCategories = useAppStore((state) => state.setCategories);
-  const setGlobalCarBrands = useAppStore((state) => state.setCarBrands);
-  const setGlobalCarModels = useAppStore((state) => state.setCarModels);
-  const setGlobalProductBrands = useAppStore((state) => state.setProductBrands);
-  const setGlobalProducts = useAppStore((state) => state.setProducts);
+  const queryClient = useQueryClient();
+  
+  // Track if initial sync has been done to prevent redundant updates
+  const syncedRef = useRef({
+    categories: false,
+    carBrands: false,
+    carModels: false,
+    productBrands: false,
+    products: false,
+  });
 
-  // Categories query
+  // Categories query - syncs to Zustand inside queryFn
   const categoriesQuery = useQuery({
     queryKey: homeScreenKeys.categories,
     queryFn: async () => {
       const response = await categoriesApi.getTree();
-      return response.data || [];
+      const data = response.data || [];
+      
+      // Sync to Zustand store INSIDE queryFn (not in useEffect)
+      // This happens once per successful fetch, not on every render
+      if (data.length > 0 && !syncedRef.current.categories) {
+        const { setCategories } = getStoreSetters();
+        setCategories(data);
+        syncedRef.current.categories = true;
+      }
+      
+      return data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
   // Car Brands query
@@ -53,9 +91,18 @@ export function useHomeScreenQuery() {
     queryKey: homeScreenKeys.carBrands,
     queryFn: async () => {
       const response = await carBrandsApi.getAll();
-      return response.data || [];
+      const data = response.data || [];
+      
+      if (data.length > 0 && !syncedRef.current.carBrands) {
+        const { setCarBrands } = getStoreSetters();
+        setCarBrands(data);
+        syncedRef.current.carBrands = true;
+      }
+      
+      return data;
     },
     staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   // Car Models query
@@ -63,9 +110,18 @@ export function useHomeScreenQuery() {
     queryKey: homeScreenKeys.carModels,
     queryFn: async () => {
       const response = await carModelsApi.getAll();
-      return response.data || [];
+      const data = response.data || [];
+      
+      if (data.length > 0 && !syncedRef.current.carModels) {
+        const { setCarModels } = getStoreSetters();
+        setCarModels(data);
+        syncedRef.current.carModels = true;
+      }
+      
+      return data;
     },
     staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   // Product Brands query
@@ -73,9 +129,18 @@ export function useHomeScreenQuery() {
     queryKey: homeScreenKeys.productBrands,
     queryFn: async () => {
       const response = await productBrandsApi.getAll();
-      return response.data || [];
+      const data = response.data || [];
+      
+      if (data.length > 0 && !syncedRef.current.productBrands) {
+        const { setProductBrands } = getStoreSetters();
+        setProductBrands(data);
+        syncedRef.current.productBrands = true;
+      }
+      
+      return data;
     },
     staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   // Products query
@@ -83,9 +148,18 @@ export function useHomeScreenQuery() {
     queryKey: homeScreenKeys.products,
     queryFn: async () => {
       const response = await productsApi.getAll({ limit: 100 });
-      return response.data?.products || [];
+      const data = response.data?.products || [];
+      
+      if (data.length > 0 && !syncedRef.current.products) {
+        const { setProducts } = getStoreSetters();
+        setProducts(data);
+        syncedRef.current.products = true;
+      }
+      
+      return data;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes for products
+    gcTime: 15 * 60 * 1000,
   });
 
   // Favorites query (only when logged in)
@@ -101,6 +175,7 @@ export function useHomeScreenQuery() {
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   // Banners query
@@ -113,38 +188,8 @@ export function useHomeScreenQuery() {
       );
     },
     staleTime: 2 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
-
-  // Sync to global store when data changes (using useEffect instead of inside queryFn)
-  useEffect(() => {
-    if (categoriesQuery.data) {
-      setGlobalCategories(categoriesQuery.data);
-    }
-  }, [categoriesQuery.data, setGlobalCategories]);
-
-  useEffect(() => {
-    if (carBrandsQuery.data) {
-      setGlobalCarBrands(carBrandsQuery.data);
-    }
-  }, [carBrandsQuery.data, setGlobalCarBrands]);
-
-  useEffect(() => {
-    if (carModelsQuery.data) {
-      setGlobalCarModels(carModelsQuery.data);
-    }
-  }, [carModelsQuery.data, setGlobalCarModels]);
-
-  useEffect(() => {
-    if (productBrandsQuery.data) {
-      setGlobalProductBrands(productBrandsQuery.data);
-    }
-  }, [productBrandsQuery.data, setGlobalProductBrands]);
-
-  useEffect(() => {
-    if (productsQuery.data) {
-      setGlobalProducts(productsQuery.data);
-    }
-  }, [productsQuery.data, setGlobalProducts]);
 
   // Check if any essential query is loading
   const isLoading =
@@ -161,8 +206,17 @@ export function useHomeScreenQuery() {
     productBrandsQuery.isRefetching ||
     productsQuery.isRefetching;
 
-  // Refetch all data
+  // Refetch all data - resets sync flags to allow fresh data to update store
   const refetch = useCallback(async () => {
+    // Reset sync flags to allow fresh data to update Zustand
+    syncedRef.current = {
+      categories: false,
+      carBrands: false,
+      carModels: false,
+      productBrands: false,
+      products: false,
+    };
+    
     await Promise.all([
       categoriesQuery.refetch(),
       carBrandsQuery.refetch(),
@@ -205,10 +259,19 @@ export function useCategoriesTreeQuery() {
     queryFn: async () => {
       console.log('[useCategoriesTreeQuery] Fetching categories tree...');
       const response = await categoriesApi.getTree();
-      console.log('[useCategoriesTreeQuery] Response received:', response.data?.length || 0, 'categories');
-      return response.data || [];
+      const data = response.data || [];
+      console.log('[useCategoriesTreeQuery] Response received:', data.length, 'categories');
+      
+      // Sync to Zustand for offline access
+      if (data.length > 0) {
+        const { setCategories } = getStoreSetters();
+        setCategories(data);
+      }
+      
+      return data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
 
