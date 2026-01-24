@@ -1340,53 +1340,53 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   chassisGridCardWrapper: {
-    width: (SCREEN_WIDTH - 24) / 3,
-    padding: 4,
+    width: (SCREEN_WIDTH - 24) / 3, // Keep same column count but items are larger inside
+    padding: 6, // Increased from 4
   },
   chassisGridCard: {
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16, // Increased from 12
+    borderWidth: 1.5,
     overflow: 'hidden',
   },
   chassisGridCardImage: {
     width: '100%',
-    height: 70,
+    height: 122, // 70 * 1.75 ≈ 122
   },
   chassisGridCardPlaceholder: {
     width: '100%',
-    height: 70,
+    height: 122, // 70 * 1.75 ≈ 122
     alignItems: 'center',
     justifyContent: 'center',
   },
   chassisGridCardInfo: {
-    padding: 8,
+    padding: 14, // 8 * 1.75 = 14
     alignItems: 'center',
   },
   chassisGridCardName: {
-    fontSize: 11,
+    fontSize: 19, // 11 * 1.75 ≈ 19
     fontWeight: '700',
     textAlign: 'center',
   },
   chassisGridCardYear: {
-    fontSize: 9,
-    marginTop: 2,
+    fontSize: 16, // 9 * 1.75 ≈ 16
+    marginTop: 4,
   },
   chassisGridCardBrand: {
-    fontSize: 10,
+    fontSize: 17, // 10 * 1.75 ≈ 17
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 4,
   },
   chassisGridCardChassisContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 4,
+    gap: 7, // 4 * 1.75 = 7
+    paddingHorizontal: 10, // 6 * 1.75 ≈ 10
+    paddingVertical: 5, // 3 * 1.75 ≈ 5
+    borderRadius: 10, // 6 * 1.75 ≈ 10
+    marginTop: 7,
   },
   chassisGridCardChassis: {
-    fontSize: 8,
+    fontSize: 14, // 8 * 1.75 = 14
     fontWeight: '600',
   },
   // Products Panel Styles
