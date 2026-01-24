@@ -786,19 +786,28 @@ export const InteractiveCarSelector: React.FC = () => {
           containerStyle,
         ]}
       >
-        {/* Glassmorphism Background */}
+        {/* Glassmorphism Background - Enhanced Frosted Glass Effect */}
         <View style={StyleSheet.absoluteFill}>
           <BlurView
-            intensity={isDark ? 40 : 60}
+            intensity={isDark ? 85 : 90}
             tint={isDark ? 'dark' : 'light'}
             style={StyleSheet.absoluteFill}
           />
           <LinearGradient
-            colors={[moodPrimary + '15', 'transparent', moodPrimary + '10']}
+            colors={[
+              moodPrimary + '25',
+              'rgba(255,255,255,0.05)',
+              moodPrimary + '18'
+            ]}
             style={StyleSheet.absoluteFill}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           />
+          {/* Additional frosted overlay for stronger glass effect */}
+          <View style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.15)' }
+          ]} />
         </View>
 
         {/* Neon border glow */}
