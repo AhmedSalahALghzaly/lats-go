@@ -959,7 +959,7 @@ export const InteractiveCarSelector: React.FC = () => {
               horizontal
               keyExtractor={keyExtractor}
               renderItem={renderGridItem}
-              estimatedItemSize={85}
+              estimatedItemSize={148} // Updated: 85 * 1.75 ≈ 148 for larger grid items
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalListContent}
               ListFooterComponent={
