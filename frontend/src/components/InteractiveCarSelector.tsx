@@ -1436,7 +1436,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   chassisGridContent: {
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
   chassisEmptyState: {
     flex: 1,
