@@ -1369,16 +1369,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   gridItemWrapper: {
-    marginHorizontal: 6,
+    marginHorizontal: 5,
   },
   gridItem: {
-    width: 140,
+    width: 130,
     height: 175,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    padding: 14,
+    padding: 3,
   },
   viewAllItem: {
     borderWidth: 2,
