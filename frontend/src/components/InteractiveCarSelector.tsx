@@ -1404,14 +1404,14 @@ const styles = StyleSheet.create({
     marginBottom: 7,
   },
   gridItemText: {
-    fontSize: 19,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '500',
     textAlign: 'center',
   },
   gridItemSubtext: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 5,
   },
   chassisSearchContainer: {
     flex: 1,
