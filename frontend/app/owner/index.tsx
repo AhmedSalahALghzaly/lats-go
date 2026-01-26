@@ -31,6 +31,7 @@ import { haptic } from '../../src/services/hapticService';
 import { VoidDeleteGesture } from '../../src/components/ui/VoidDeleteGesture';
 import { ConfettiEffect } from '../../src/components/ui/ConfettiEffect';
 import { GlobalSearch } from '../../src/components/ui/GlobalSearch';
+import { AdvancedSearchBottomSheet } from '../../src/components/ui/AdvancedSearchBottomSheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
