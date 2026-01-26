@@ -406,6 +406,7 @@ const ProductCard = memo<ProductCardProps>(({
   language,
   onPress,
   onAddToCart,
+  checkDuplicate,
 }) => {
   const scale = useSharedValue(1);
   
@@ -413,9 +414,6 @@ const ProductCard = memo<ProductCardProps>(({
   const cartButtonRef = useRef<AnimatedCartButtonRef>(null);
   const [cartLoading, setCartLoading] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
-  
-  // Get cart mutation helpers
-  const { checkDuplicate } = useCartMutations();
   
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -443,9 +441,9 @@ const ProductCard = memo<ProductCardProps>(({
     onPress(item.id);
   }, [item.id, onPress]);
 
-  // Handle add to cart with duplicate checking
+  // Handle add to cart with duplicate checking - uses prop function
   const handleAddToCart = useCallback(async () => {
-    // Check for duplicate
+    // Check for duplicate using the passed checkDuplicate function
     if (checkDuplicate(item.id)) {
       if (cartButtonRef.current) {
         cartButtonRef.current.triggerShake();
@@ -455,7 +453,7 @@ const ProductCard = memo<ProductCardProps>(({
       }
       Alert.alert(
         language === 'ar' ? 'تنبيه' : 'Notice',
-        'عرض المنتج تم اضافته بالفعل',
+        language === 'ar' ? 'هذا المنتج موجود بالفعل في سلة التسوق' : 'This product is already in your cart',
         [{ text: language === 'ar' ? 'حسناً' : 'OK', style: 'default' }],
         { cancelable: true }
       );
@@ -472,8 +470,13 @@ const ProductCard = memo<ProductCardProps>(({
       await onAddToCart(item.id);
       setAddedToCart(true);
       setTimeout(() => setAddedToCart(false), 1500);
-    } catch (error) {
-      console.error('Error adding to cart from CarSelector:', error);
+    } catch (error: any) {
+      // Handle duplicate error from mutation (backup check)
+      if (error?.message === 'DUPLICATE_PRODUCT') {
+        if (cartButtonRef.current) {
+          cartButtonRef.current.triggerShake();
+        }
+      }
       setAddedToCart(false);
     } finally {
       setCartLoading(false);
