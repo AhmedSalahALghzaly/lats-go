@@ -500,7 +500,7 @@ export const ProductCard = React.memo(ProductCardComponent, (prevProps, nextProp
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
     overflow: 'hidden',
     margin: 6,
