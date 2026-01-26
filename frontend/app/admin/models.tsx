@@ -158,11 +158,11 @@ const ModelFormHeader = memo(({
           mode="multiple"
           value={images}
           onChange={(newImages) => setImages(newImages as string[])}
-          maxImages={5}
+          maxImages={15}
           aspectRatio={[16, 9]}
           size="medium"
           label={language === 'ar' ? 'صور الموديل' : 'Model Images'}
-          hint={language === 'ar' ? 'يمكنك إضافة حتى 5 صور للموديل' : 'You can add up to 5 images for the model'}
+          hint={language === 'ar' ? 'يمكنك إضافة حتى 15 صورة للموديل' : 'You can add up to 15 images for the model'}
         />
 
         {/* Brand Selector */}
