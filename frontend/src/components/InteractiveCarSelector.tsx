@@ -41,7 +41,7 @@ import { useAppStore } from '../store/appStore';
 import { productApi } from '../services/api';
 import { ProductCardSkeleton } from './ui/Skeleton';
 import { AnimatedCartButton, AnimatedCartButtonRef } from './AnimatedIconButton';
-import { useCartMutations } from '../hooks/queries/useShoppingHubQuery';
+import { useCartMutations, useCartQuery } from '../hooks/queries/useShoppingHubQuery';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
