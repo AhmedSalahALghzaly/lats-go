@@ -317,13 +317,30 @@ export default function CarModelDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Car Image */}
+        {/* Car Image Gallery */}
         <View style={[styles.imageContainer, { backgroundColor: colors.surface }]}>
-          {carModel.image_url ? (
+          {carModel.images && carModel.images.length > 1 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              style={styles.imageGallery}
+            >
+              {carModel.images.map((imageUrl: string, index: number) => (
+                <View key={index} style={styles.galleryImageWrapper}>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.carImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          ) : carModel.image_url ? (
             <Image
               source={{ uri: carModel.image_url }}
               style={styles.carImage}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           ) : (
             <Ionicons name="car-sport" size={100} color={colors.textSecondary} />
