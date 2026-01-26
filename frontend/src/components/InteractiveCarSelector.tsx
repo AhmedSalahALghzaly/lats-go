@@ -1548,7 +1548,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1.3,
     borderRadius: 8,
     marginTop: 4,
-    opacity: 0.7593,
+    opacity: 0.9350,
   },
   headerSubtitle: {
     fontSize: 12,
@@ -1634,7 +1634,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    opacity: 0.7953,
+    opacity: 0.9750,
   },
   priceText: {
     fontSize: 13,
