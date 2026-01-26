@@ -1545,7 +1545,7 @@ const styles = StyleSheet.create({
   productCountBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 1.5,
-    paddingVertical: 3,
+    paddingVertical: 1.5,
     borderRadius: 8,
     marginTop: 4,
     opacity: 0.3999,
@@ -1625,9 +1625,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   productName: {
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 15.5,
+    fontSize: 13.5,
+    fontWeight: '550',
+    lineHeight: 15,
   },
   priceTag: {
     alignSelf: 'flex-start',
