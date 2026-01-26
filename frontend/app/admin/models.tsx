@@ -108,12 +108,12 @@ const ModelFormHeader = memo(({
 }: FormHeaderProps) => {
   const {
     name, nameAr, selectedBrandId, yearFrom, yearTo, chassisNumber,
-    modelImage, imageUrl, catalogPdfName, isEditMode, searchQuery,
+    images, catalogPdfName, isEditMode, searchQuery,
   } = formState;
   const {
     setName, setNameAr, setSelectedBrandId, setYearFrom, setYearTo,
-    setChassisNumber, setModelImage, setImageUrl, setCatalogPdf, setCatalogPdfName,
-    handleSave, resetForm, setSearchQuery, pickImage, pickCatalogPdf,
+    setChassisNumber, setImages, setCatalogPdf, setCatalogPdfName,
+    handleSave, resetForm, setSearchQuery, pickCatalogPdf,
   } = handlers;
 
   return (
@@ -153,51 +153,17 @@ const ModelFormHeader = memo(({
           )}
         </View>
 
-        {/* Model Image Upload */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            {language === 'ar' ? 'صورة الموديل' : 'Model Image'}
-          </Text>
-          
-          <View style={styles.imageUploadSection}>
-            {modelImage ? (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: modelImage }} style={styles.modelImagePreview} />
-                <TouchableOpacity
-                  style={styles.removeImageBtn}
-                  onPress={() => setModelImage(null)}
-                >
-                  <Ionicons name="close-circle" size={24} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.uploadBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={pickImage}
-              >
-                <Ionicons name="camera" size={32} color={colors.primary} />
-                <Text style={[styles.uploadBtnText, { color: colors.primary }]}>
-                  {language === 'ar' ? 'اختر صورة' : 'Pick Image'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {!modelImage && (
-            <View style={styles.urlInputSection}>
-              <Text style={[styles.orText, { color: colors.textSecondary }]}>
-                {language === 'ar' ? 'أو أدخل رابط الصورة' : 'Or enter image URL'}
-              </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-                value={imageUrl}
-                onChangeText={setImageUrl}
-                placeholder="https://example.com/model.png"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
-          )}
-        </View>
+        {/* Model Images Upload - Using ImageUploader Component */}
+        <ImageUploader
+          mode="multiple"
+          value={images}
+          onChange={(newImages) => setImages(newImages as string[])}
+          maxImages={5}
+          aspectRatio={[16, 9]}
+          size="medium"
+          label={language === 'ar' ? 'صور الموديل' : 'Model Images'}
+          hint={language === 'ar' ? 'يمكنك إضافة حتى 5 صور للموديل' : 'You can add up to 5 images for the model'}
+        />
 
         {/* Brand Selector */}
         <View style={styles.formGroup}>
