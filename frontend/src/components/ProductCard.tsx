@@ -47,7 +47,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   cardWidth, 
   showDetails = true 
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { language, isRTL } = useTranslation();
   const router = useRouter();
   const user = useAppStore(useCallback((state) => state.user, []));
