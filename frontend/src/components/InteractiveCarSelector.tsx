@@ -971,8 +971,9 @@ export const InteractiveCarSelector: React.FC = () => {
       language={language}
       onPress={handleProductPress}
       onAddToCart={handleProductAddToCart}
+      checkDuplicate={checkDuplicate}
     />
-  ), [isDark, moodPrimary, colors.text, colors.primary, colors.textSecondary, language, handleProductPress, handleProductAddToCart]);
+  ), [isDark, moodPrimary, colors.text, colors.primary, colors.textSecondary, language, handleProductPress, handleProductAddToCart, checkDuplicate]);
 
   const renderFilterItem = useCallback(({ item }: { item: PriceFilter }) => (
     <FilterChip
