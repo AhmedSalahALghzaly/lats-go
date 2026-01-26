@@ -862,18 +862,19 @@ export const InteractiveCarSelector: React.FC = () => {
     router.push(`/product/${productId}`);
   }, [router]);
 
-  // Cart mutations for adding products
-  const { addToCart } = useCartMutations();
+  // Cart mutations for adding products - single source of truth
+  const { addToCart, checkDuplicate } = useCartMutations();
 
   // Handle adding product to cart from ProductCard
   const handleProductAddToCart = useCallback(async (productId: string) => {
     try {
       await addToCart.mutateAsync(productId);
     } catch (error: any) {
-      // Duplicate errors are handled in ProductCard with shake animation
-      if (error?.message !== 'DUPLICATE_PRODUCT') {
-        console.error('Error adding to cart:', error);
+      // Re-throw duplicate errors for ProductCard to handle shake animation
+      if (error?.message === 'DUPLICATE_PRODUCT') {
+        throw error;
       }
+      console.error('Error adding to cart:', error);
     }
   }, [addToCart]);
 
