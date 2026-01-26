@@ -283,15 +283,36 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     }
   }, [quantity, quantityBounceAnim, animatePrice]);
 
-  // Memoized style computations
+  // Memoized style computations with Glassmorphism Dark Mode Enhancement
   const containerStyle = useMemo(() => [
     styles.container,
     {
-      backgroundColor: colors.card,
-      borderColor: colors.border,
+      // Glassmorphism Background - 30% more solid in Dark Mode
+      backgroundColor: isDark ? 'rgba(30, 41, 59, 0.91)' : 'rgba(255, 255, 255, 0.9)',
+      // Enhanced Border for Dark Mode clarity
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.18)' : colors.border,
+      borderWidth: 1,
+      borderRadius: 20,
       width: cardWidth || 160,
+      // Enhanced Shadow for Premium Depth
+      ...Platform.select({
+        web: {
+          boxShadow: isDark 
+            ? '0px 8px 32px rgba(0, 0, 0, 0.4), inset 0px 1px 0px rgba(255, 255, 255, 0.05)'
+            : '0px 4px 16px rgba(0, 0, 0, 0.1)',
+          backdropFilter: 'blur(15px)',
+          WebkitBackdropFilter: 'blur(15px)',
+        },
+        default: {
+          shadowColor: isDark ? '#000000' : '#000000',
+          shadowOffset: { width: 0, height: isDark ? 8 : 4 },
+          shadowOpacity: isDark ? 0.25 : 0.1,
+          shadowRadius: isDark ? 15 : 8,
+          elevation: isDark ? 12 : 6,
+        },
+      }),
     },
-  ], [colors.card, colors.border, cardWidth]);
+  ], [isDark, colors.border, cardWidth]);
 
   const imageContainerStyle = useMemo(() => [
     styles.imageContainer, 
