@@ -1389,7 +1389,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0.5,
+    borderWidth: 1.9,
     borderColor: 'rgba(255,255,255,0.2)',
     padding: 1,
   },
@@ -1436,12 +1436,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 10,
     borderRadius: 13,
-    borderWidth: 1.5,
-    gap: 10,
+    borderWidth: 3,
+    gap: 7,
   },
   chassisSearchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 11.5,
     padding: 0,
   },
   chassisResultsContainer: {
@@ -1467,17 +1467,17 @@ const styles = StyleSheet.create({
   },
   chassisGridCard: {
     borderRadius: 16,
-    borderWidth: 0.5,
+    borderWidth: 1.9,
     borderColor: 'rgba(255,255,255,0.2)',
     overflow: 'hidden',
   },
   chassisGridCardImage: {
     width: '100%',
-    height: 119,
+    height: 115,
   },
   chassisGridCardPlaceholder: {
     width: '100%',
-    height: 119,
+    height: 115,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1492,7 +1492,7 @@ const styles = StyleSheet.create({
   },
   chassisGridCardYear: {
     fontSize: 13.5,
-    marginTop: 4,
+    marginTop: 3,
   },
   chassisGridCardBrand: {
     fontSize: 13.5,
@@ -1556,11 +1556,11 @@ const styles = StyleSheet.create({
   },
   productCountBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 5,
+    paddingHorizontal: 3,
     paddingVertical: 1,
     borderRadius: 8,
     marginTop: 4,
-    opacity: 0.35,
+    opacity: 0.19,
   },
   headerSubtitle: {
     fontSize: 12,
@@ -1568,7 +1568,7 @@ const styles = StyleSheet.create({
   },
   filtersRow: {
     paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingVertical: 7,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.35)',
     gap: 10,
@@ -1637,7 +1637,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   productName: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     lineHeight: 15,
   },
@@ -1646,6 +1646,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    opacity: 0.19,
   },
   priceText: {
     fontSize: 13,
