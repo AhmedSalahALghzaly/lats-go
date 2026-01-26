@@ -320,33 +320,47 @@ export default function CarModelDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Car Image Gallery */}
+        {/* Car Image Gallery - 16:9 aspect ratio */}
         <View style={[styles.imageContainer, { backgroundColor: colors.surface }]}>
-          {carModel.images && carModel.images.length > 1 ? (
+          {(carModel.images && carModel.images.length > 0) || carModel.image_url ? (
             <ScrollView
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               style={styles.imageGallery}
+              contentContainerStyle={styles.imageGalleryContent}
             >
-              {carModel.images.map((imageUrl: string, index: number) => (
+              {(carModel.images && carModel.images.length > 0 
+                ? carModel.images 
+                : [carModel.image_url]
+              ).map((imageUrl: string, index: number) => (
                 <View key={index} style={styles.galleryImageWrapper}>
                   <Image
                     source={{ uri: imageUrl }}
-                    style={styles.carImage}
-                    resizeMode="contain"
+                    style={styles.galleryImage}
+                    resizeMode="cover"
                   />
+                  {/* Image indicator dots */}
+                  {((carModel.images && carModel.images.length > 1) || false) && (
+                    <View style={styles.imageIndicatorContainer}>
+                      {carModel.images.map((_: string, dotIndex: number) => (
+                        <View 
+                          key={dotIndex} 
+                          style={[
+                            styles.imageIndicatorDot,
+                            { backgroundColor: dotIndex === index ? colors.primary : 'rgba(255,255,255,0.5)' }
+                          ]} 
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
               ))}
             </ScrollView>
-          ) : carModel.image_url ? (
-            <Image
-              source={{ uri: carModel.image_url }}
-              style={styles.carImage}
-              resizeMode="contain"
-            />
           ) : (
-            <Ionicons name="car-sport" size={100} color={colors.textSecondary} />
+            <View style={styles.noImageContainer}>
+              <Ionicons name="car-sport" size={100} color={colors.textSecondary} />
+            </View>
           )}
         </View>
 
