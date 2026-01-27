@@ -278,9 +278,9 @@ export default function SearchScreen() {
                     {getName(model)}{model.year_from && model.year_to ? ` ${model.year_from}-${model.year_to}` : ''}
                   </Text>
                   <View style={[styles.imageFilterImageContainerLarge, { backgroundColor: colors.background }]}>
-                    {model.image ? (
+                    {model.image_url ? (
                       <Image
-                        source={{ uri: model.image }}
+                        source={{ uri: model.image_url }}
                         style={styles.carModelImage}
                         contentFit="cover"
                         transition={200}
