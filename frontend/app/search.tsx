@@ -275,7 +275,7 @@ export default function SearchScreen() {
                     styles.imageFilterLabel,
                     { color: selectedCarModel === model.id ? colors.secondary : colors.text },
                   ]} numberOfLines={1}>
-                    {getName(model)}{model.year_start && model.year_end ? ` ${model.year_start}-${model.year_end}` : ''}
+                    {getName(model)}{model.year_from && model.year_to ? ` ${model.year_from}-${model.year_to}` : ''}
                   </Text>
                   <View style={[styles.imageFilterImageContainerLarge, { backgroundColor: colors.background }]}>
                     {model.image ? (
