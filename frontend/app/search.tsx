@@ -659,19 +659,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   carBrandImage: {
-    width: 100,
-    height: 100,
+    width: '100%',
+    height: '100%',
   },
   carModelImage: {
     width: '100%',
     height: '100%',
   },
   productBrandImage: {
-    width: 100,
-    height: 100,
+    width: '100%',
+    height: '100%',
   },
   categoryImage: {
-    width: 75,
-    height: 75,
+    width: '100%',
+    height: '100%',
   },
 });
