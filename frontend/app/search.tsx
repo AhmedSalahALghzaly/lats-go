@@ -226,23 +226,30 @@ export default function SearchScreen() {
                 <TouchableOpacity
                   key={brand.id}
                   style={[
-                    styles.filterChip,
-                    { borderColor: colors.border },
-                    selectedCarBrand === brand.id && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    styles.imageFilterCard,
+                    { borderColor: colors.border, backgroundColor: colors.surface },
+                    selectedCarBrand === brand.id && { borderColor: colors.primary, borderWidth: 2 },
                   ]}
                   onPress={() => setSelectedCarBrand(selectedCarBrand === brand.id ? null : brand.id)}
                 >
-                  <Ionicons 
-                    name="car-sport" 
-                    size={14} 
-                    color={selectedCarBrand === brand.id ? '#FFF' : colors.primary} 
-                  />
                   <Text style={[
-                    styles.filterChipText,
-                    { color: selectedCarBrand === brand.id ? '#FFF' : colors.text },
-                  ]}>
+                    styles.imageFilterLabel,
+                    { color: selectedCarBrand === brand.id ? colors.primary : colors.text },
+                  ]} numberOfLines={1}>
                     {getName(brand)}
                   </Text>
+                  <View style={[styles.imageFilterImageContainer, { backgroundColor: colors.background }]}>
+                    {brand.image ? (
+                      <Image
+                        source={{ uri: brand.image }}
+                        style={styles.carBrandImage}
+                        contentFit="contain"
+                        transition={200}
+                      />
+                    ) : (
+                      <Ionicons name="car-sport" size={40} color={colors.textSecondary} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -258,24 +265,30 @@ export default function SearchScreen() {
                 <TouchableOpacity
                   key={model.id}
                   style={[
-                    styles.filterChip,
-                    { borderColor: colors.border },
-                    selectedCarModel === model.id && { backgroundColor: colors.secondary, borderColor: colors.secondary },
+                    styles.imageFilterCardLarge,
+                    { borderColor: colors.border, backgroundColor: colors.surface },
+                    selectedCarModel === model.id && { borderColor: colors.secondary, borderWidth: 2 },
                   ]}
                   onPress={() => setSelectedCarModel(selectedCarModel === model.id ? null : model.id)}
                 >
-                  <Ionicons 
-                    name="car" 
-                    size={14} 
-                    color={selectedCarModel === model.id ? '#FFF' : colors.secondary} 
-                  />
                   <Text style={[
-                    styles.filterChipText,
-                    { color: selectedCarModel === model.id ? '#FFF' : colors.text },
-                  ]}>
-                    {getName(model)}
-                    {model.year_start && model.year_end && ` (${model.year_start}-${model.year_end})`}
+                    styles.imageFilterLabel,
+                    { color: selectedCarModel === model.id ? colors.secondary : colors.text },
+                  ]} numberOfLines={1}>
+                    {getName(model)}{model.year_start && model.year_end ? ` ${model.year_start}-${model.year_end}` : ''}
                   </Text>
+                  <View style={[styles.imageFilterImageContainerLarge, { backgroundColor: colors.background }]}>
+                    {model.image ? (
+                      <Image
+                        source={{ uri: model.image }}
+                        style={styles.carModelImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : (
+                      <Ionicons name="car" size={60} color={colors.textSecondary} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -296,23 +309,30 @@ export default function SearchScreen() {
                 <TouchableOpacity
                   key={brand.id}
                   style={[
-                    styles.filterChip,
-                    { borderColor: colors.border },
-                    selectedProductBrand === brand.id && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    styles.imageFilterCard,
+                    { borderColor: colors.border, backgroundColor: colors.surface },
+                    selectedProductBrand === brand.id && { borderColor: colors.primary, borderWidth: 2 },
                   ]}
                   onPress={() => setSelectedProductBrand(selectedProductBrand === brand.id ? null : brand.id)}
                 >
-                  <Ionicons 
-                    name="pricetag" 
-                    size={14} 
-                    color={selectedProductBrand === brand.id ? '#FFF' : colors.primary} 
-                  />
                   <Text style={[
-                    styles.filterChipText,
-                    { color: selectedProductBrand === brand.id ? '#FFF' : colors.text },
-                  ]}>
+                    styles.imageFilterLabel,
+                    { color: selectedProductBrand === brand.id ? colors.primary : colors.text },
+                  ]} numberOfLines={1}>
                     {brand.name}
                   </Text>
+                  <View style={[styles.imageFilterImageContainer, { backgroundColor: colors.background }]}>
+                    {brand.logo ? (
+                      <Image
+                        source={{ uri: brand.logo }}
+                        style={styles.productBrandImage}
+                        contentFit="contain"
+                        transition={200}
+                      />
+                    ) : (
+                      <Ionicons name="pricetag" size={40} color={colors.textSecondary} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -328,18 +348,30 @@ export default function SearchScreen() {
                 <TouchableOpacity
                   key={cat.id}
                   style={[
-                    styles.filterChip,
-                    { borderColor: colors.border },
-                    selectedCategory === cat.id && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    styles.imageFilterCardSmall,
+                    { borderColor: colors.border, backgroundColor: colors.surface },
+                    selectedCategory === cat.id && { borderColor: colors.primary, borderWidth: 2 },
                   ]}
                   onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
                 >
                   <Text style={[
-                    styles.filterChipText,
-                    { color: selectedCategory === cat.id ? '#FFF' : colors.text },
-                  ]}>
+                    styles.imageFilterLabelSmall,
+                    { color: selectedCategory === cat.id ? colors.primary : colors.text },
+                  ]} numberOfLines={1}>
                     {getName(cat)}
                   </Text>
+                  <View style={[styles.imageFilterImageContainerSmall, { backgroundColor: colors.background }]}>
+                    {cat.image ? (
+                      <Image
+                        source={{ uri: cat.image }}
+                        style={styles.categoryImage}
+                        contentFit="contain"
+                        transition={200}
+                      />
+                    ) : (
+                      <Ionicons name="grid" size={30} color={colors.textSecondary} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
