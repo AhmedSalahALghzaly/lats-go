@@ -447,12 +447,12 @@ export const AdvancedSearchBottomSheet: React.FC<AdvancedSearchBottomSheetProps>
                     style={[styles.quickAction, { backgroundColor: '#8B5CF6' + '15' }]}
                     onPress={() => {
                       onClose();
-                      router.push('/car-brands');
+                      router.push('/models');
                     }}
                   >
                     <MaterialCommunityIcons name="car-multiple" size={24} color="#8B5CF6" />
                     <Text style={[styles.quickActionText, { color: '#8B5CF6' }]}>
-                      {language === 'ar' ? 'ماركات السيارات' : 'Car Brands'}
+                      {language === 'ar' ? 'موديلات' : 'Models'}
                     </Text>
                   </TouchableOpacity>
                 </View>
