@@ -239,9 +239,9 @@ export default function SearchScreen() {
                     {getName(brand)}
                   </Text>
                   <View style={[styles.imageFilterImageContainer, { backgroundColor: colors.background }]}>
-                    {brand.image ? (
+                    {brand.logo ? (
                       <Image
-                        source={{ uri: brand.image }}
+                        source={{ uri: brand.logo }}
                         style={styles.carBrandImage}
                         contentFit="contain"
                         transition={200}
