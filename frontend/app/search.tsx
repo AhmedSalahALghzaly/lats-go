@@ -361,15 +361,15 @@ export default function SearchScreen() {
                     {getName(cat)}
                   </Text>
                   <View style={[styles.imageFilterImageContainerSmall, { backgroundColor: colors.background }]}>
-                    {cat.image ? (
+                    {cat.image_data ? (
                       <Image
-                        source={{ uri: cat.image }}
+                        source={{ uri: cat.image_data }}
                         style={styles.categoryImage}
                         contentFit="contain"
                         transition={200}
                       />
                     ) : (
-                      <Ionicons name="grid" size={30} color={colors.textSecondary} />
+                      <Ionicons name={(cat.icon as any) || 'grid'} size={30} color={colors.textSecondary} />
                     )}
                   </View>
                 </TouchableOpacity>
